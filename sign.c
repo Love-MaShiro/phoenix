@@ -138,7 +138,7 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen, size_t *tfslen,
     uint32_t counter = 0;
     uint32_t tfors_auth_count;
     size_t tfors_siglen;
-    size_t max = (SPX_TFORS_BYTES * 9) / 10;
+    size_t tfors_sig_max = SPX_TFORS_SIG_MAX;
     uint32_t indices[SPX_TFORS_K];
     uint32_t wots_addr[8] = {0};
     uint32_t tree_addr[8] = {0};
@@ -166,7 +166,7 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen, size_t *tfslen,
         octopus_compute_auth_count(indices, SPX_TFORS_K, &tfors_auth_count);
         tfors_siglen = SPX_TFORS_K * SPX_N + tfors_auth_count * SPX_N;
 
-        if (tfors_siglen <= max) {
+        if (tfors_siglen <= tfors_sig_max) {
             break;
         }
         counter++;
@@ -204,10 +204,10 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen, size_t *tfslen,
     *siglen = SPX_N + 4 + tfors_siglen + SPX_D * (SPX_WOTS_BYTES + SPX_TREE_HEIGHT * SPX_N);
     *tfslen = tfors_siglen;
 
-    printf("=== crypto_sign_signature ===\n");
-    printf("Final root from signature: ");
-    for(int i=0; i<SPX_N && i<32; i++) printf("%02x", root[i]);
-    printf("\n");
+    // printf("=== crypto_sign_signature ===\n");
+    // printf("Final root from signature: ");
+    // for(int i=0; i<SPX_N && i<32; i++) printf("%02x", root[i]);
+    // printf("\n");
 
     return 0;
 }
@@ -254,7 +254,7 @@ int crypto_sign_verify(const uint8_t *sig, size_t siglen, size_t tfors_siglen,
     sig += SPX_N;
     sig += 4;
 
-    printf("tree=%lu, idx_leaf=%u\n", (unsigned long)tree, idx_leaf);
+    // printf("tree=%lu, idx_leaf=%u\n", (unsigned long)tree, idx_leaf);
 
     /* Layer correctly defaults to 0, so no need to set_layer_addr */
     set_tree_addr(wots_addr, tree);
@@ -262,13 +262,13 @@ int crypto_sign_verify(const uint8_t *sig, size_t siglen, size_t tfors_siglen,
 
     tfors_pk_from_sig(root, sig, mhash, &ctx, wots_addr);
 
-    printf("After tfors_pk_from_sig, root[0..3]=%02x%02x%02x%02x\n", 
-           root[0], root[1], root[2], root[3]);
+    // printf("After tfors_pk_from_sig, root[0..3]=%02x%02x%02x%02x\n", 
+    //        root[0], root[1], root[2], root[3]);
 
     sig += tfors_siglen;
-    printf("TFORS pk derived from signature, first 32 bytes: ");
-    for (size_t i = 0; i < 32 && i < SPX_N; i++) printf("%02x", root[i]);
-    printf("\n");
+    // printf("TFORS pk derived from signature, first 32 bytes: ");
+    // for (size_t i = 0; i < 32 && i < SPX_N; i++) printf("%02x", root[i]);
+    // printf("\n");
 
     /* For each subtree.. */
     for (i = 0; i < SPX_D; i++) {
@@ -299,10 +299,10 @@ int crypto_sign_verify(const uint8_t *sig, size_t siglen, size_t tfors_siglen,
         tree = tree >> SPX_TREE_HEIGHT;
     }
 
-    printf("Final root[0..3]=%02x%02x%02x%02x\n", 
-           root[0], root[1], root[2], root[3]);
-    printf("pub_root[0..3]=%02x%02x%02x%02x\n", 
-           pub_root[0], pub_root[1], pub_root[2], pub_root[3]);
+    // printf("Final root[0..3]=%02x%02x%02x%02x\n", 
+    //        root[0], root[1], root[2], root[3]);
+    // printf("pub_root[0..3]=%02x%02x%02x%02x\n", 
+    //        pub_root[0], pub_root[1], pub_root[2], pub_root[3]);
 
     /* Check if the root node equals the root node in the public key. */
     if (memcmp(root, pub_root, SPX_N)) {
@@ -343,9 +343,9 @@ int crypto_sign_open(unsigned char *m, unsigned long long *mlen, unsigned long l
     unsigned long long slen_tmp = *slen;
     unsigned long long tfslen_tmp = *tfslen;
     unsigned long long mlen_tmp = smlen - slen_tmp;
-    printf("crypto_sign_open: pk[0..15] = ");
-    for(int i=0; i<16 && i<SPX_N; i++) printf("%02x", pk[i]);
-    printf("\n");
+    // printf("crypto_sign_open: pk[0..15] = ");
+    // for(int i=0; i<16 && i<SPX_N; i++) printf("%02x", pk[i]);
+    // printf("\n");
 
     if (crypto_sign_verify(sm, (size_t)slen_tmp, (size_t)tfslen_tmp, sm + slen_tmp, (size_t)mlen_tmp, pk)) {
         memset(m, 0, smlen);

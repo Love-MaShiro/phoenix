@@ -71,10 +71,11 @@
 #define SPX_TFORS_MSG_BYTES ((SPX_TFORS_A * SPX_TFORS_K + 7) / 8 + SPX_N)
 #define SPX_TFORS_BYTES (SPX_TFORS_K * SPX_N + \
                          SPX_TFORS_K * SPX_TFORS_HEIGHT * SPX_N)
+#define SPX_TFORS_SIG_MAX (SPX_TFORS_BYTES * 7) / 10
 #define SPX_TFORS_PK_BYTES SPX_N
 
-/* Resulting SPX sizes. */
-#define SPX_BYTES (SPX_N + 4 + SPX_TFORS_BYTES + SPX_D * SPX_WOTS_BYTES +\
+/* R，esulting SPX sizes. */
+#define SPX_BYTES (SPX_N + 4 + SPX_TFORS_SIG_MAX + SPX_D * SPX_WOTS_BYTES +\
                    SPX_FULL_HEIGHT * SPX_N)
 #define SPX_PK_BYTES (2 * SPX_N)
 #define SPX_SK_BYTES (2 * SPX_N + SPX_PK_BYTES)
@@ -82,6 +83,3 @@
 #include "../shake_offsets.h"
 
 #endif
-
-
-
