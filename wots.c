@@ -18,9 +18,18 @@
  * Interprets in as start-th value of the chain.
  * addr has to contain the address of the chain.
  */
+/**
+ * Computes the chaining function.
+ * out and in have to be n-byte arrays.
+ *
+ * Interprets in as start-th value of the chain.
+ * addr has to contain the address of the chain.
+ * Support w=SPX_WOTS_W1 or w=SPX_WOTS_W2.
+ */
 static void gen_chain(unsigned char *out, const unsigned char *in,
                       unsigned int start, unsigned int steps,
-                      const spx_ctx *ctx, uint32_t addr[8])
+                      const spx_ctx *ctx, uint32_t addr[8],
+                      uint32_t w)
 {
     uint32_t i;
 
@@ -28,7 +37,8 @@ static void gen_chain(unsigned char *out, const unsigned char *in,
     memcpy(out, in, SPX_N);
 
     /* Iterate 'steps' calls to the hash function. */
-    for (i = start; i < (start+steps) && i < SPX_WOTS_W; i++) {
+    for (i = start; i < (start + steps) && i < w; i++)
+    {
         set_hash_addr(addr, i);
         thash(out, out, 1, ctx, addr);
     }
@@ -132,12 +142,6 @@ void wots_pk_from_sig(unsigned char *pk,
     /*Calculate checksum*/
     thash_fin(digest, msg, 1, ctx, wots_pk_addr, bitmask);
 
-    /*For fixing mistake*/
-    printf("wots_pk_from_sig: digest = ");
-    for (int i = 0; i < SPX_N; i++) {
-        printf("%02x", digest[i]);
-    }
-    printf("\n");
 
     memset(lengths, 0, sizeof(lengths));
     csum = chain_lengths(lengths, digest);
@@ -147,8 +151,6 @@ void wots_pk_from_sig(unsigned char *pk,
         (csum < WOTS_SUM_BASE) ||
         (csum > (WOTS_SUM_BASE + WOTS_SUM_RANGE)))
     {
-        /*For fixing mistake*/
-        printf("wots_pk_from_sig: Checksum validation failed\n");
         /* Validation failed: invalidate the public key */
         memset(pk, 0, SPX_WOTS_BYTES);
     }
@@ -157,10 +159,8 @@ void wots_pk_from_sig(unsigned char *pk,
         /* Validation successful: proceed with PK reconstruction */
 
         /* Set the value of the last chain (the single checksum chain) */
-        /* This chain signs the offset from the base sum */
-        
+        /* This chain signs the offset from the base sum */   
         lengths[SPX_WOTS_LEN1] = csum - WOTS_SUM_BASE;
-        printf("lengths[30] = %u\n", lengths[30]);
         set_type(addr, SPX_ADDR_TYPE_WOTS); 
         ull_to_bytes(((unsigned char *)(addr)) + (SPX_OFFSER_COUNTER), COUNTER_SIZE, 0);
 

@@ -95,9 +95,7 @@ int crypto_sign_keypair(unsigned char *pk, unsigned char *sk)
 }
 
 /**
- * @brief 将 32 位计数器以小端模式写入 4 字节缓冲区
- * @param dst 目标缓冲区（必须 >=4 字节）
- * @param counter 要写入的计数器值
+ * Write counter into a 4-byte buffer in little-endian format
  */
 static inline void write_counter(uint8_t *dst, uint32_t counter)
 {
@@ -152,6 +150,7 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen, size_t *tfslen,
     set_type(tree_addr, SPX_ADDR_TYPE_HASHTREE);
 
     randombytes(optrand, SPX_N);
+    /* Compute the digest randomization value. */
     gen_message_random(sig, sk_prf, optrand, m, mlen, &ctx);
 
     memcpy(mtmp, m, mlen);
@@ -175,7 +174,6 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen, size_t *tfslen,
         }
     }
 
-    printf("Selected counter: %u, TFORS signature size: %zu\n", counter, tfors_siglen);
 
     sig += SPX_N;
     write_counter(sig, counter);
@@ -204,10 +202,6 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen, size_t *tfslen,
     *siglen = SPX_N + 4 + tfors_siglen + SPX_D * (SPX_WOTS_BYTES + SPX_TREE_HEIGHT * SPX_N);
     *tfslen = tfors_siglen;
 
-    // printf("=== crypto_sign_signature ===\n");
-    // printf("Final root from signature: ");
-    // for(int i=0; i<SPX_N && i<32; i++) printf("%02x", root[i]);
-    // printf("\n");
 
     return 0;
 }
@@ -254,21 +248,12 @@ int crypto_sign_verify(const uint8_t *sig, size_t siglen, size_t tfors_siglen,
     sig += SPX_N;
     sig += 4;
 
-    // printf("tree=%lu, idx_leaf=%u\n", (unsigned long)tree, idx_leaf);
 
     /* Layer correctly defaults to 0, so no need to set_layer_addr */
     set_tree_addr(wots_addr, tree);
     set_keypair_addr(wots_addr, idx_leaf);
 
     tfors_pk_from_sig(root, sig, mhash, &ctx, wots_addr);
-
-    // printf("After tfors_pk_from_sig, root[0..3]=%02x%02x%02x%02x\n", 
-    //        root[0], root[1], root[2], root[3]);
-
-    sig += tfors_siglen;
-    // printf("TFORS pk derived from signature, first 32 bytes: ");
-    // for (size_t i = 0; i < 32 && i < SPX_N; i++) printf("%02x", root[i]);
-    // printf("\n");
 
     /* For each subtree.. */
     for (i = 0; i < SPX_D; i++) {
@@ -343,9 +328,7 @@ int crypto_sign_open(unsigned char *m, unsigned long long *mlen, unsigned long l
     unsigned long long slen_tmp = *slen;
     unsigned long long tfslen_tmp = *tfslen;
     unsigned long long mlen_tmp = smlen - slen_tmp;
-    // printf("crypto_sign_open: pk[0..15] = ");
-    // for(int i=0; i<16 && i<SPX_N; i++) printf("%02x", pk[i]);
-    // printf("\n");
+ 
 
     if (crypto_sign_verify(sm, (size_t)slen_tmp, (size_t)tfslen_tmp, sm + slen_tmp, (size_t)mlen_tmp, pk)) {
         memset(m, 0, smlen);

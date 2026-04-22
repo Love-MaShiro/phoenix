@@ -64,10 +64,7 @@ void copy_keypair_addr(uint32_t out[8], const uint32_t in[8])
     memcpy( out, in, SPX_OFFSET_TREE+8 );
     memcpy( (unsigned char *)out + SPX_OFFSET_KP_ADDR, (unsigned char *)in + SPX_OFFSET_KP_ADDR, 4); 
 }
-// void copy_keypair_addr(uint32_t out[8], const uint32_t in[8])
-// {
-//     memcpy(out, in, 8 * sizeof(uint32_t));
-// }
+
 
 /*
  * Specify which Merkle chain within the OTS we're working with

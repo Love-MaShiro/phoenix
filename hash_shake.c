@@ -96,83 +96,6 @@ void hash_message(unsigned char *digest, uint64_t *tree, uint32_t *leaf_idx,
     *leaf_idx &= (~(uint32_t)0) >> (32 - SPX_LEAF_BITS);
 }
 
-/**
- * Generates k distinct leaf indices from a message digest using PRNG.
- *
- * This function implements the PRNG to Obtain a Random Subset algorithm
- * from the PORS paper. It uses the SPHINCS+ PRF as the underlying
- * pseudorandom function.
- *
- * Returns 0 on success, 1 on failure.
- */
-// int h2_generate_indices(uint32_t indices[SPX_TFORS_K],
-//                         const unsigned char msg_digest[SPX_N],
-//                         const spx_ctx *ctx)
-// {
-//     printf("h2_generate_indices called with msg_digest: ");
-//     for (size_t i = 0; i < SPX_N; i++) {
-//         printf("%02x", msg_digest[i]);  
-//     }
-//     const uint32_t k = SPX_TFORS_K;
-//     const uint32_t t = SPX_TFORS_K_PRIME;
-//     uint32_t ctr = 0;
-//     uint32_t collected = 0;
-//     uint64_t used = 0;
-
-//     uint32_t log2_t = 0;
-//     uint32_t tmp = t - 1;
-//     while (tmp > 0) {
-//         log2_t++;
-//         tmp >>= 1;
-//     }
-
-//     uint32_t addr[8] = {0};
-//     set_type(addr, SPX_ADDR_TYPE_H2);
-
-//     while (collected < k) {
-//         unsigned char rnd[SPX_N];
-//         set_leaf_index(addr, ctr++);
-//         prf_addr(rnd, ctx, addr);
-
-//         for (size_t i = 0; i < SPX_N; i++) {
-//             rnd[i] ^= msg_digest[i];
-//         }
-
-//         uint64_t val = 0;
-//         for (size_t i = 0; i < sizeof(uint64_t) && i < SPX_N; i++) {
-//             val = (val << 8) | rnd[i];
-//         }
-
-//         uint32_t idx = val & ((1 << log2_t) - 1);
-//         if (idx >= t) continue;
-
-//         uint64_t mask = 1ULL << idx;
-//         if (!(used & mask)) {
-//             used |= mask;
-//             indices[collected++] = idx;
-//         }
-
-//         if (ctr > 10000) return -1;
-//     }
-
-//     for (uint32_t i = 0; i < k; i++) {
-//         for (uint32_t j = i + 1; j < k; j++) {
-//             if (indices[i] > indices[j]) {
-//                 uint32_t temp = indices[i];
-//                 indices[i] = indices[j];
-//                 indices[j] = temp;
-//             }
-//         }
-//     }
-
-//     return 0;
-// }
-/**
- * Generates k distinct leaf indices from a message digest using PRNG.
- *
- * This function uses only the public seed and message digest, so it works
- * identically for both signing and verification.
- */
 int h2_generate_indices(uint32_t indices[SPX_TFORS_K],
                         const unsigned char msg_digest[SPX_N],
                         const spx_ctx *ctx)
@@ -187,15 +110,13 @@ int h2_generate_indices(uint32_t indices[SPX_TFORS_K],
         tmp >>= 1;
     }
 
-    // ================================
-    // ✅ 正确：把 msg_digest + pub_seed 一起哈希！
-    // ================================
+
     unsigned char input[SPX_N + SPX_N];
     memcpy(input, msg_digest, SPX_N);
-    memcpy(input + SPX_N, ctx->pub_seed, SPX_N);  // 👈 把 ctx 加进来
+    memcpy(input + SPX_N, ctx->pub_seed, SPX_N);
 
     unsigned char rnd[512];
-    shake256(rnd, sizeof(rnd), input, sizeof(input));  // 👈 一起输入
+    shake256(rnd, sizeof(rnd), input, sizeof(input));
     size_t rnd_ptr = 0;
 
     uint8_t mask[t / 8] = {0};
