@@ -110,7 +110,7 @@
  */
 
 /* Resulting SPX sizes. */
-#define SPX_BYTES (SPX_N + 4 + SPX_TFORS_SIG_MAX + SPX_D * SPX_WOTS_BYTES +\
+#define SPX_BYTES (SPX_N + COUNTER_SIZE + SPX_TFORS_SIG_MAX + SPX_D * (SPX_WOTS_BYTES +COUNTER_SIZE) + \
                    SPX_FULL_HEIGHT * SPX_N)
 #define SPX_PK_BYTES (2 * SPX_N)
 #define SPX_SK_BYTES (2 * SPX_N + SPX_PK_BYTES)

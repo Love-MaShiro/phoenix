@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "counter.h"
 #include "api.h"
 #include "params.h"
 #include "wots.h"
@@ -95,27 +96,6 @@ int crypto_sign_keypair(unsigned char *pk, unsigned char *sk)
 }
 
 /**
- * Write counter into a 4-byte buffer in little-endian format
- */
-static inline void write_counter(uint8_t *dst, uint32_t counter)
-{
-    dst[0] = (uint8_t)(counter >>  0) & 0xFF;
-    dst[1] = (uint8_t)(counter >>  8) & 0xFF;
-    dst[2] = (uint8_t)(counter >> 16) & 0xFF;
-    dst[3] = (uint8_t)(counter >> 24) & 0xFF;
-}
-
-static inline uint32_t read_counter(const uint8_t *src)
-{
-    uint32_t counter = 0;
-    counter |= (uint32_t)src[0] <<  0;
-    counter |= (uint32_t)src[1] <<  8;
-    counter |= (uint32_t)src[2] << 16;
-    counter |= (uint32_t)src[3] << 24;
-    return counter;
-}
-
-/**
  * Returns an array containing a detached signature.
  */
 int crypto_sign_signature(uint8_t *sig, size_t *siglen, size_t *tfslen,
@@ -150,15 +130,18 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen, size_t *tfslen,
     set_type(tree_addr, SPX_ADDR_TYPE_HASHTREE);
 
     randombytes(optrand, SPX_N);
+
+    uint8_t *sig_origin = sig; /* mark the start of the signature for later use */
+    
     /* Compute the digest randomization value. */
     gen_message_random(sig, sk_prf, optrand, m, mlen, &ctx);
 
     memcpy(mtmp, m, mlen);
 
     while (1) {
-        write_counter(mtmp + mlen, counter);
+        ull_to_bytes(mtmp + mlen, COUNTER_SIZE, counter);
         hash_message(mhash, &tree, &idx_leaf, sig, pk,
-                    mtmp, mlen + 4, &ctx);
+                    mtmp, mlen + COUNTER_SIZE, &ctx);
 
         message_to_indices(indices, mhash, &ctx);
 
@@ -175,9 +158,8 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen, size_t *tfslen,
     }
 
 
-    sig += SPX_N;
-    write_counter(sig, counter);
-    sig += 4;
+    save_fors_counter(counter, sig_origin);
+    sig += SPX_N + COUNTER_SIZE;
 
     set_tree_addr(wots_addr, tree);
     set_keypair_addr(wots_addr, idx_leaf);
@@ -193,13 +175,13 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen, size_t *tfslen,
         set_keypair_addr(wots_addr, idx_leaf);
 
         merkle_sign(sig, root, &ctx, wots_addr, tree_addr, idx_leaf);
-        sig += SPX_WOTS_BYTES + SPX_TREE_HEIGHT * SPX_N;
+        sig += (SPX_WOTS_BYTES + SPX_TREE_HEIGHT * SPX_N + COUNTER_SIZE);
 
         idx_leaf = (tree & ((1 << SPX_TREE_HEIGHT)-1));
         tree = tree >> SPX_TREE_HEIGHT;
     }
 
-    *siglen = SPX_N + 4 + tfors_siglen + SPX_D * (SPX_WOTS_BYTES + SPX_TREE_HEIGHT * SPX_N);
+    *siglen = SPX_N + COUNTER_SIZE + tfors_siglen + SPX_D * (SPX_WOTS_BYTES + SPX_TREE_HEIGHT * SPX_N + COUNTER_SIZE);
     *tfslen = tfors_siglen;
 
 
@@ -238,15 +220,14 @@ int crypto_sign_verify(const uint8_t *sig, size_t siglen, size_t tfors_siglen,
     set_type(tree_addr, SPX_ADDR_TYPE_HASHTREE);
     set_type(wots_pk_addr, SPX_ADDR_TYPE_WOTSPK);
 
-    counter = read_counter(sig + SPX_N);
+    counter = get_fors_counter(sig);
     memcpy(mtmp, m, mlen);
-    write_counter(mtmp + mlen, counter);
+    ull_to_bytes(mtmp + mlen, COUNTER_SIZE, counter);
 
     /* Derive the message digest and leaf index from R || PK || M. */
     /* The additional SPX_N is a result of the hash domain separator. */
-    hash_message(mhash, &tree, &idx_leaf, sig, pk, mtmp, mlen + 4, &ctx);
-    sig += SPX_N;
-    sig += 4;
+    hash_message(mhash, &tree, &idx_leaf, sig, pk, mtmp, mlen + COUNTER_SIZE, &ctx);
+    sig += (SPX_N + COUNTER_SIZE);
 
 
     /* Layer correctly defaults to 0, so no need to set_layer_addr */
@@ -254,6 +235,9 @@ int crypto_sign_verify(const uint8_t *sig, size_t siglen, size_t tfors_siglen,
     set_keypair_addr(wots_addr, idx_leaf);
 
     tfors_pk_from_sig(root, sig, mhash, &ctx, wots_addr);
+    
+    /* Skip TFORS signature body */
+    sig += tfors_siglen;
 
     /* For each subtree.. */
     for (i = 0; i < SPX_D; i++) {
@@ -265,10 +249,11 @@ int crypto_sign_verify(const uint8_t *sig, size_t siglen, size_t tfors_siglen,
 
         copy_keypair_addr(wots_pk_addr, wots_addr);
 
+        wots_counter = get_wots_counter(sig);
         /* The WOTS public key is only correct if the signature was correct. */
         /* Initially, root is the TFORS pk, but on subsequent iterations it is
            the root of the subtree below the currently processed subtree. */
-        wots_pk_from_sig(wots_pk, sig, root, &ctx, wots_addr);
+        wots_pk_from_sig(wots_pk, sig, root, &ctx, wots_addr, wots_counter);
         sig += SPX_WOTS_BYTES;
 
         /* Compute the leaf node using the WOTS public key. */
@@ -277,19 +262,13 @@ int crypto_sign_verify(const uint8_t *sig, size_t siglen, size_t tfors_siglen,
         /* Compute the root node of this subtree. */
         compute_root(root, leaf, idx_leaf, 0, sig, SPX_TREE_HEIGHT,
                      &ctx, tree_addr);
-        sig += SPX_TREE_HEIGHT * SPX_N;
+        sig += SPX_TREE_HEIGHT * SPX_N + COUNTER_SIZE;
 
         /* Update the indices for the next layer. */
         idx_leaf = (tree & ((1 << SPX_TREE_HEIGHT)-1));
         tree = tree >> SPX_TREE_HEIGHT;
     }
 
-    // printf("Final root[0..3]=%02x%02x%02x%02x\n", 
-    //        root[0], root[1], root[2], root[3]);
-    // printf("pub_root[0..3]=%02x%02x%02x%02x\n", 
-    //        pub_root[0], pub_root[1], pub_root[2], pub_root[3]);
-
-    /* Check if the root node equals the root node in the public key. */
     if (memcmp(root, pub_root, SPX_N)) {
         return -1;
     }

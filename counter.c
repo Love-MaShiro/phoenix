@@ -30,3 +30,21 @@ uint32_t get_wots_counter(const unsigned char *sig)
     counter = bytes_to_ull(counter_bytes, COUNTER_SIZE);
     return counter;
 }
+/* FORS+C  counter is stored in the end */
+void save_fors_counter(uint32_t counter, unsigned char *sig)
+{
+    unsigned char counter_bytes[COUNTER_SIZE];
+
+    ull_to_bytes(counter_bytes, COUNTER_SIZE, counter);
+    memcpy(sig + FORS_COUNTER_OFFSET, counter_bytes, COUNTER_SIZE);
+}
+
+uint32_t get_fors_counter(const unsigned char *sig)
+{
+    unsigned char counter_bytes_out[COUNTER_SIZE];
+    uint32_t counter;
+
+    memcpy(counter_bytes_out, sig + FORS_COUNTER_OFFSET, COUNTER_SIZE);
+    counter = bytes_to_ull(counter_bytes_out, COUNTER_SIZE);
+    return counter;
+}

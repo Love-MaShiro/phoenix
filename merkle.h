@@ -9,7 +9,7 @@
 void merkle_sign(uint8_t *sig, unsigned char *root,
         const spx_ctx* ctx,
         uint32_t wots_addr[8], uint32_t tree_addr[8],
-        uint32_t idx_leaf);
+        uint32_t idx_leaf, uint32_t *counter_out);
 
 /* Compute the root node of the top-most subtree. */
 #define merkle_gen_root SPX_NAMESPACE(merkle_gen_root)

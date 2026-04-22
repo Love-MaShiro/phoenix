@@ -32,29 +32,7 @@ void tfors_sk_to_leaf(unsigned char *leaf, const unsigned char *sk,
                             const spx_ctx *ctx,
                             uint32_t tfors_leaf_addr[8])
 {
-    // printf("\n=== tfors_sk_to_leaf ===\n");
-    // printf("ctx pointer: %p\n", (void*)ctx);
-    // printf("ctx->pub_seed: ");
-    // for(int i=0; i<SPX_N; i++) printf("%02x", ctx->pub_seed[i]);
-    // printf("\n");
-    // printf("ctx->sk_seed: ");
-    // for(int i=0; i<SPX_N; i++) printf("%02x", ctx->sk_seed[i]);
-    // printf("\n");
-    // printf("tfors_sk_to_leaf: addr[4] = 0x%08x (type)\n", tfors_leaf_addr[4]);
-    // printf("tfors_sk_to_leaf: ctx->pub_seed = ");
-    // for(int i=0; i<SPX_N && i<16; i++) printf("%02x", ctx->pub_seed[i]);
-    // printf("\n");
-    
-    // // 打印要哈希的私钥
-    // printf("tfors_sk_to_leaf: sk = ");
-    // for(int i=0; i<SPX_N; i++) printf("%02x", sk[i]);
-    // printf("\n");
-    
     thash(leaf, sk, 1, ctx, tfors_leaf_addr);
-    
-    // printf("tfors_sk_to_leaf: leaf hash = ");
-    // for(int i=0; i<SPX_N; i++) printf("%02x", leaf[i]);
-    // printf("\n");
 }
 
 struct tfors_gen_leaf_info {
