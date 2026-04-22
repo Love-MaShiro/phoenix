@@ -38,6 +38,14 @@ void wots_gen_leafx1(unsigned char *dest,
     set_keypair_addr( pk_addr, leaf_idx );
 
     for (i = 0, buffer = pk_buffer; i < SPX_WOTS_LEN; i++, buffer += SPX_N) {
+        uint32_t w;
+        if (i < SPX_WOTS_W1_LEN) {
+            w = SPX_WOTS_W1;
+        } else if (i < SPX_WOTS_LEN1) {
+            w = SPX_WOTS_W2;
+        } else {
+            w = SPX_WOTS_CHECKSUM_W;
+        }
         uint32_t wots_k = info->wots_steps[i] | wots_k_mask; /* Set wots_k to */
             /* the step if we're generating a signature, ~0 if we're not */
 
@@ -45,7 +53,7 @@ void wots_gen_leafx1(unsigned char *dest,
         set_chain_addr(leaf_addr, i);
         set_hash_addr(leaf_addr, 0);
         set_type(leaf_addr, SPX_ADDR_TYPE_WOTSPRF);
-
+ 
         prf_addr(buffer, ctx, leaf_addr);
 
         set_type(leaf_addr, SPX_ADDR_TYPE_WOTS);
@@ -59,7 +67,7 @@ void wots_gen_leafx1(unsigned char *dest,
             }
 
             /* Check if we hit the top of the chain */
-            if (k == SPX_WOTS_W - 1) break;
+            if (k == w - 1) break;
 
             /* Iterate one step on the chain */
             set_hash_addr(leaf_addr, k);

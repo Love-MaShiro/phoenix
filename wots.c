@@ -10,9 +10,6 @@
 #include "address.h"
 #include "params.h"
 
-// TODO clarify address expectations, and make them more uniform.
-// TODO i.e. do we expect types to be set already?
-// TODO and do we expect modifications or copies?
 
 /**
  * Computes the chaining function.
@@ -40,76 +37,154 @@ static void gen_chain(unsigned char *out, const unsigned char *in,
 /**
  * base_w algorithm as described in draft.
  * Interprets an array of bytes as integers in base w.
- * This only works when log_w is a divisor of 8.
+ * We adjust the number of chains for w1 and w2 so that they just cover SPX_N - SPX_WOTS_ZERO_LAST_BITS.
  */
 static void base_w(unsigned int *output, const int out_len,
                    const unsigned char *input)
 {
-    int in = 0;
-    int out = 0;
-    unsigned char total;
-    int bits = 0;
-    int consumed;
+    int i, j;
+    unsigned int offset = 0;
 
-    for (consumed = 0; consumed < out_len; consumed++) {
-        if (bits == 0) {
-            total = input[in];
-            in++;
-            bits += 8;
+    /* Handle first part: W1 chain */
+    for (i = 0; i < SPX_WOTS_W1_LEN; i++)
+    {
+        output[i] = 0;
+        for (j = 0; j < SPX_WOTS_LOGW1; j++)
+        {
+            output[i] ^= ((input[offset >> 3] >> (offset & 0x7)) & 0x1) << j;
+            offset++;
         }
-        bits -= SPX_WOTS_LOGW;
-        output[out] = (total >> bits) & (SPX_WOTS_W - 1);
-        out++;
+    }
+
+    /* Handle second part: W2 chain */
+    for (i = SPX_WOTS_W1_LEN; i < SPX_WOTS_LEN1; i++)
+    {
+        output[i] = 0;
+        for (j = 0; j < SPX_WOTS_LOGW2; j++)
+        {
+            output[i] ^= ((input[offset >> 3] >> (offset & 0x7)) & 0x1) << j;
+            offset++;
+        }
     }
 }
 
-/* Computes the WOTS+ checksum over a message (in base_w). */
-static void wots_checksum(unsigned int *csum_base_w,
-                          const unsigned int *msg_base_w)
+/** 
+ * Computes the checksum over a message (in variable base_w). 
+ * Compare with the functions in sphincsplus, we treat void functions as functions with return values as done in sphincsplusc.
+*/
+static unsigned int wots_checksum(const unsigned int *msg_base_w)
 {
     unsigned int csum = 0;
-    unsigned char csum_bytes[(SPX_WOTS_LEN2 * SPX_WOTS_LOGW + 7) / 8];
-    unsigned int i;
+    unsigned int i = 0;
 
     /* Compute checksum. */
-    for (i = 0; i < SPX_WOTS_LEN1; i++) {
-        csum += SPX_WOTS_W - 1 - msg_base_w[i];
+    for (; i < SPX_WOTS_W1_LEN; i++)
+    {
+        csum += SPX_WOTS_W1 - 1 - msg_base_w[i];
     }
 
-    /* Convert checksum to base_w. */
-    /* Make sure expected empty zero bits are the least significant bits. */
-    csum = csum << ((8 - ((SPX_WOTS_LEN2 * SPX_WOTS_LOGW) % 8)) % 8);
-    ull_to_bytes(csum_bytes, sizeof(csum_bytes), csum);
-    base_w(csum_base_w, SPX_WOTS_LEN2, csum_bytes);
+    for (; i < SPX_WOTS_W1_LEN + SPX_WOTS_W2_LEN; i++)
+    {
+        csum += SPX_WOTS_W2 - 1 - msg_base_w[i];
+    }
+
+    return csum;
 }
 
 /* Takes a message and derives the matching chain lengths. */
-void chain_lengths(unsigned int *lengths, const unsigned char *msg)
+unsigned int chain_lengths(unsigned int *lengths, const unsigned char *msg)
 {
-    base_w(lengths, SPX_WOTS_LEN1, msg);
-    wots_checksum(lengths + SPX_WOTS_LEN1, lengths);
+    unsigned int csum;
+
+    base_w(lengths, msg);
+    csum = wots_checksum(lengths);
+    return csum;
 }
 
 /**
  * Takes a WOTS signature and an n-byte message, computes a WOTS public key.
- *
+ * Uses the range-constrained search logic with variable-length chains.
  * Writes the computed public key to 'pk'.
  */
 void wots_pk_from_sig(unsigned char *pk,
                       const unsigned char *sig, const unsigned char *msg,
-                      const spx_ctx *ctx, uint32_t addr[8])
+                      const spx_ctx *ctx, uint32_t addr[8], uint32_t counter)
 {
     unsigned int lengths[SPX_WOTS_LEN];
     uint32_t i;
+    uint32_t mask = (~0U << (8 - WOTS_ZERO_BITS));
+    unsigned char bitmask[SPX_N];
 
-    chain_lengths(lengths, msg);
+    /*Initial parameters for validation of checksum*/
+    int csum;
+    unsigned char digest[SPX_N];
 
-    for (i = 0; i < SPX_WOTS_LEN; i++) {
+    /*Set thash address for custom hash to type 6 & PK format*/
+    uint32_t wots_pk_addr[8] = {0};
+    copy_subtree_addr(wots_pk_addr, addr);
+
+    copy_keypair_addr(wots_pk_addr, addr); 
+    set_type(wots_pk_addr, SPX_ADDR_TYPE_COMPRESS_WOTS);
+    thash_init_bitmask(bitmask, 1, ctx, wots_pk_addr);
+
+    /*Set padding*/
+    ull_to_bytes(((unsigned char *)(wots_pk_addr)) + (SPX_OFFSER_COUNTER), COUNTER_SIZE, counter);
+    /*Calculate checksum*/
+    thash_fin(digest, msg, 1, ctx, wots_pk_addr, bitmask);
+
+    /*For fixing mistake*/
+    printf("wots_pk_from_sig: digest = ");
+    for (int i = 0; i < SPX_N; i++) {
+        printf("%02x", digest[i]);
+    }
+    printf("\n");
+
+    memset(lengths, 0, sizeof(lengths));
+    csum = chain_lengths(lengths, digest);
+   
+    /*Validate Checksum*/
+    if (((digest[SPX_N - 1] & mask) != 0) ||
+        (csum < WOTS_SUM_BASE) ||
+        (csum > (WOTS_SUM_BASE + WOTS_SUM_RANGE)))
+    {
+        /*For fixing mistake*/
+        printf("wots_pk_from_sig: Checksum validation failed\n");
+        /* Validation failed: invalidate the public key */
+        memset(pk, 0, SPX_WOTS_BYTES);
+    }
+    else
+    {
+        /* Validation successful: proceed with PK reconstruction */
+
+        /* Set the value of the last chain (the single checksum chain) */
+        /* This chain signs the offset from the base sum */
+        
+        lengths[SPX_WOTS_LEN1] = csum - WOTS_SUM_BASE;
+        printf("lengths[30] = %u\n", lengths[30]);
+        set_type(addr, SPX_ADDR_TYPE_WOTS); 
+        ull_to_bytes(((unsigned char *)(addr)) + (SPX_OFFSER_COUNTER), COUNTER_SIZE, 0);
+
+        /* Reconstruct W1 chains. */
+        for (i = 0; i < SPX_WOTS_W1_LEN; i++)
+        {
+            set_chain_addr(addr, i);
+            gen_chain(pk + i * SPX_N, sig + i * SPX_N,
+                      lengths[i], SPX_WOTS_W1 - 1 - lengths[i], ctx, addr, SPX_WOTS_W1);
+        }
+
+        /* Reconstruct W2 chains. */
+        for (; i < SPX_WOTS_LEN1; i++)
+        {
+            set_chain_addr(addr, i);
+            gen_chain(pk + i * SPX_N, sig + i * SPX_N,
+                      lengths[i], SPX_WOTS_W2 - 1 - lengths[i], ctx, addr, SPX_WOTS_W2);
+        }
+
+        /* Reconstruct checksum chain. */
         set_chain_addr(addr, i);
-        gen_chain(pk + i*SPX_N, sig + i*SPX_N,
-                  lengths[i], SPX_WOTS_W - 1 - lengths[i], ctx, addr);
+        gen_chain(pk + i * SPX_N, sig + i * SPX_N,
+                  lengths[i], SPX_WOTS_CHECKSUM_W - 1 - lengths[i], ctx, addr, SPX_WOTS_CHECKSUM_W);
     }
 }
-
 
 

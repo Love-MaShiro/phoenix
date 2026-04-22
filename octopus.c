@@ -207,17 +207,6 @@ void octopus_compute_auth_paths(unsigned char root[SPX_N],
         
         tfors_sk_to_leaf(&target_hash[leaf_idx * SPX_N], leaf_sk[i], ctx, tfors_leaf_addr);
         
-        // uint32_t leaf_addr[8];
-        // memset(leaf_addr, 0, 8 * sizeof(uint32_t));
-        // copy_keypair_addr(leaf_addr, tree_addr);
-        // set_type(leaf_addr, SPX_ADDR_TYPE_TFORSTREE);
-        // set_tree_height(leaf_addr, 0);
-        // set_tree_index(leaf_addr, leaf_idx);
-        
-        // print_spx_addr("fors_leaf_addr (test)", leaf_addr);
-        
-        // thash(&target_hash[leaf_idx * SPX_N], leaf_sk[i], 1, ctx, leaf_addr);
-        
         printf("leaf sk: ");
         for (int j = 0; j < SPX_N; j++) {
             printf("%02x", leaf_sk[i][j]);
@@ -268,12 +257,12 @@ void octopus_compute_auth_paths(unsigned char root[SPX_N],
                 }
             }
             
-            // 如果是左孩子且不是最后一个叶子，暂停向上
+            /* If it's the left child and not the last leaf, stopping moving upward */ 
             if ((node_idx & 1) == 0 && idx < max_leaf_idx) {
                 break;
             }
             
-            // 需要向上合并
+            /* Need to merge upward */
             if (stack_top > 0) {
                 unsigned char *left = &stack[(stack_top - 1) * SPX_N];
                 unsigned char *right = &current[SPX_N];
