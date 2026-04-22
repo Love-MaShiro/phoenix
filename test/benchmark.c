@@ -130,6 +130,8 @@ int main(void)
 
     unsigned long long smlen;
     unsigned long long mlen;
+    unsigned long long slen;
+    unsigned long long tfslen;
     unsigned long long t[NTESTS+1];
     struct timespec start, stop;
     double result;
@@ -138,7 +140,10 @@ int main(void)
     randombytes(m, SPX_MLEN);
     randombytes(addr, SPX_ADDR_BYTES);
 
-    printf("Parameters: n = %d, h = %d, d = %d, b = %d, k = %d, w = %d\n",
+    uint32_t tfors_indices[SPX_TFORS_K];
+    message_to_indices(tfors_indices, tfors_m, &ctx);
+
+    printf("Parameters: n = %d, h = %d, d = %d, a = %d, k = %d, w = %d\n",
            SPX_N, SPX_FULL_HEIGHT, SPX_D, SPX_TFORS_A, SPX_TFORS_K,
            SPX_WOTS_W);
 
@@ -147,12 +152,11 @@ int main(void)
     MEASURT("thash                ", 1, thash(block, block, 1, &ctx, (uint32_t*)addr));
     MEASURE("Generating keypair.. ", 1, crypto_sign_keypair(pk, sk));
     MEASURE("  - WOTS pk gen..    ", (1 << SPX_TREE_HEIGHT), wots_gen_pkx1(wots_pk, &ctx, (uint32_t *) addr));
-    MEASURE("Signing..            ", 1, crypto_sign(sm, &smlen, m, SPX_MLEN, sk));
-    MEASURE("  - TFORS signing..   ", 1, tfors_sign(tfors_sig, tfors_pk, tfors_m, &ctx, (uint32_t *) addr));
+    MEASURE("Signing..            ", 1, crypto_sign(sm, &smlen, &slen, &tfslen, m, SPX_MLEN, sk));
     MEASURE("  - WOTS pk gen..    ", SPX_D * (1 << SPX_TREE_HEIGHT), wots_gen_pkx1(wots_pk, &ctx, (uint32_t *) addr));
-    MEASURE("Verifying..          ", 1, crypto_sign_open(mout, &mlen, sm, smlen, pk));
+    MEASURE("Verifying..          ", 1, crypto_sign_open(mout, &mlen, &slen, &tfslen, sm, smlen, pk));
 
-    printf("Signature size: %d (%.2f KiB)\n", SPX_BYTES, SPX_BYTES / 1024.0);
+    printf("Signature size: %llu (%.2f KiB)\n", slen, (double)slen / 1024.0);
     printf("Public key size: %d (%.2f KiB)\n", SPX_PK_BYTES, SPX_PK_BYTES / 1024.0);
     printf("Secret key size: %d (%.2f KiB)\n", SPX_SK_BYTES, SPX_SK_BYTES / 1024.0);
 
@@ -170,7 +174,3 @@ static void wots_gen_pkx1(unsigned char *pk, const spx_ctx *ctx,
     INITIALIZE_LEAF_INFO_X1(leaf, addr, steps);
     wots_gen_leafx1(pk, ctx, 0, &leaf);
 }
-
-
-
-

@@ -98,8 +98,22 @@ void hash_message(unsigned char *digest, uint64_t *tree, uint32_t *leaf_idx,
 }
 
 
+/**
+* H₂ function: Generates k distinct key-set indices.
+ * 
+ * This function uses SHAKE256 as a deterministic PRNG. The same msg_digest
+ * input will always produce the same output indices, which is essential
+ * for signature verification.
+ * 
+ * Parameters:
+ *   indices      - Output array of k distinct indices
+ *   msg_digest   - Message digest (n bytes) from hash_message
+ *   ctx          - SPHINCS+ context (for Haraka)
+ * 
+ * Returns 0 on success, 1 on failure.
+ */
 int h2_generate_indices(uint32_t *indices,
-                        const unsigned char *msg_digest,
+                        const unsigned char *msg,
                         const spx_ctx *ctx)
 {
     (void)ctx;
@@ -115,14 +129,13 @@ int h2_generate_indices(uint32_t *indices,
     uint32_t collected = 0;
     uint64_t used_mask = 0;
     
-    // 使用 SPX_N 的倍数作为输出大小，SHAKE256 可以产生任意长度
-    unsigned char hash_out[SPX_N * 2];  // 32 或 64 字节
-    uint64_t s_inc[26];
+    unsigned char hash_out[SPX_N * 2];
+    uint8_t s_inc[65];
     
-    shake256_inc_init(s_inc);
-    shake256_inc_absorb(s_inc, msg_digest, SPX_N);
-    shake256_inc_finalize(s_inc);
-    shake256_inc_squeeze(hash_out, SPX_N * 2, s_inc);
+    haraka_S_inc_init(s_inc);
+    haraka_S_inc_absorb(s_inc, msg, SPX_TFORS_MSG_BYTES, ctx);
+    haraka_S_inc_finalize(s_inc);
+    haraka_S_inc_squeeze(hash_out, SPX_N * 2, s_inc, ctx);
     
     uint32_t per_block = (SPX_N * 2 * 8) / log2_kp;
     if (per_block == 0) per_block = 1;
@@ -149,7 +162,10 @@ int h2_generate_indices(uint32_t *indices,
     memcpy(prev, hash_out, SPX_N * 2);
     
     while (collected < m) {
-        shake256(hash_out, SPX_N * 2, prev, SPX_N * 2);
+        haraka_S_inc_init(s_inc);
+        haraka_S_inc_absorb(s_inc, prev, SPX_N * 2, ctx);
+        haraka_S_inc_finalize(s_inc);
+        haraka_S_inc_squeeze(hash_out, SPX_N * 2, s_inc, ctx);
         memcpy(prev, hash_out, SPX_N * 2);
         
         val = 0;

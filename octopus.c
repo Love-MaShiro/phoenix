@@ -194,28 +194,19 @@ void octopus_compute_auth_paths(unsigned char root[SPX_N],
         uint32_t leaf_idx = indices[i];
         is_target[leaf_idx] = 1;
 
-        printf("tfors_sign: pub_seed = ");
-        for(int i=0; i<SPX_N && i<16; i++) printf("%02x", ctx->pub_seed[i]);
-        printf("\n");
+        // printf("tfors_sign: pub_seed = ");
+        // for(int i=0; i<SPX_N && i<16; i++) printf("%02x", ctx->pub_seed[i]);
+        // printf("\n");
 
         uint32_t tfors_leaf_addr[8] = {0};
         copy_keypair_addr(tfors_leaf_addr, tree_addr);
         set_type(tfors_leaf_addr, SPX_ADDR_TYPE_TFORSTREE);
         set_tree_height(tfors_leaf_addr, 0);
         set_tree_index(tfors_leaf_addr, indices[i]);
-        print_spx_addr("fors_leaf_addr (initial)", tfors_leaf_addr);
+        // print_spx_addr("fors_leaf_addr (initial)", tfors_leaf_addr);
         
         tfors_sk_to_leaf(&target_hash[leaf_idx * SPX_N], leaf_sk[i], ctx, tfors_leaf_addr);
-        
-        printf("leaf sk: ");
-        for (int j = 0; j < SPX_N; j++) {
-            printf("%02x", leaf_sk[i][j]);
-        }
-        printf("leaf hash: ");
-        for (int j = 0; j < SPX_N; j++) {
-            printf("%02x", target_hash[leaf_idx * SPX_N + j]);
-        }
-        printf("\n\n");
+    
     }
     
     // 5. 使用栈遍历所有叶子

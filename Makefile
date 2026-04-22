@@ -27,7 +27,8 @@ TESTS =         test/tfors \
 		test/spx \
 		test/octopus  
 
-BENCHMARK = test/benchmark
+BENCHMARK = test/benchmark \
+		tets/tfors_benchmark
 
 .PHONY: clean test benchmark
 
@@ -48,6 +49,9 @@ PQCgenKAT_sign: PQCgenKAT_sign.c $(DET_SOURCES) $(DET_HEADERS)
 
 test/benchmark: test/benchmark.c test/cycles.c $(SOURCES) $(HEADERS)
 	$(CC) $(CFLAGS) -o $@ test/cycles.c $(SOURCES) $< $(LDLIBS)
+
+test/tfors_benchmark: test/tfors_benchmark.c $(SOURCES) $(HEADERS)
+	$(CC) $(CFLAGS) -o $@ $(SOURCES) $< $(LDLIBS)
 
 test/%: test/%.c $(SOURCES) $(HEADERS)
 	$(CC) $(CFLAGS) -o $@ $(SOURCES) $< $(LDLIBS)
