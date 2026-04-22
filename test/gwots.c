@@ -37,7 +37,7 @@ int main() {
     unsigned char expected_root[SPX_N];
     memcpy(expected_root, message_to_sign, SPX_N);
     /* Signature buffer: WOTS signature + Merkle Auth Path */
-    unsigned char sig[SPX_WOTS_BYTES + SPX_TREE_HEIGHT * SPX_N];
+    unsigned char sig[SPX_WOTS_BYTES + SPX_TREE_HEIGHT * SPX_N + 64];
     
     unsigned char recovered_pk_full[SPX_WOTS_PK_BYTES];
     unsigned char recovered_leaf[SPX_N];

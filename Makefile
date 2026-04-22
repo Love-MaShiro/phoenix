@@ -2,10 +2,10 @@ PARAMS = sphincs-haraka-128f
 THASH = robust
 
 CC=/usr/bin/gcc
-CFLAGS=-Wall -Wextra -Wpedantic -O3 -std=c99 -Wconversion -Wmissing-prototypes -DPARAMS=$(PARAMS) $(EXTRA_CFLAGS)
+CFLAGS=-Wall -Wextra -Wpedantic -O3 -std=c99 -Wconversion -Wmissing-prototypes -DPARAMS=$(PARAMS) -I. -Itest $(EXTRA_CFLAGS)
 
-SOURCES =          address.c randombytes.c merkle.c wots.c wotsx1.c utils.c utilsx1.c tfors.c sign.c octopus.c
-HEADERS = params.h address.h randombytes.h merkle.h wots.h wotsx1.h utils.h utilsx1.h tfors.h api.h  hash.h thash.h octopus.h
+SOURCES =          address.c randombytes.c merkle.c wots.c wotsx1.c utils.c utilsx1.c tfors.c sign.c octopus.c counter.c
+HEADERS = params.h address.h randombytes.h merkle.h wots.h wotsx1.h utils.h utilsx1.h tfors.h api.h  hash.h thash.h octopus.h counter.h
 
 ifneq (,$(findstring shake,$(PARAMS)))
 	SOURCES += fips202.c hash_shake.c thash_shake_$(THASH).c
@@ -25,10 +25,13 @@ DET_HEADERS = $(HEADERS:randombytes.%=rng.%)
 
 TESTS =         test/tfors \
 		test/spx \
-		test/octopus  
+		test/octopus \
+		test/gwots \
+		test/haraka
 
 BENCHMARK = test/benchmark \
-		tets/tfors_benchmark
+		test/tfors_benchmark \
+		test/gwots_benchmark
 
 .PHONY: clean test benchmark
 
@@ -50,8 +53,11 @@ PQCgenKAT_sign: PQCgenKAT_sign.c $(DET_SOURCES) $(DET_HEADERS)
 test/benchmark: test/benchmark.c test/cycles.c $(SOURCES) $(HEADERS)
 	$(CC) $(CFLAGS) -o $@ test/cycles.c $(SOURCES) $< $(LDLIBS)
 
-test/tfors_benchmark: test/tfors_benchmark.c $(SOURCES) $(HEADERS)
-	$(CC) $(CFLAGS) -o $@ $(SOURCES) $< $(LDLIBS)
+test/tfors_benchmark: test/tfors_benchmark.c test/cycles.c $(SOURCES) $(HEADERS)
+	$(CC) $(CFLAGS) -o $@ test/cycles.c $(SOURCES) $< $(LDLIBS)
+
+test/gwots_benchmark: test/gwots_benchmark.c test/cycles.c $(SOURCES) $(HEADERS)
+	$(CC) $(CFLAGS) -o $@ test/cycles.c $(SOURCES) $< $(LDLIBS)
 
 test/%: test/%.c $(SOURCES) $(HEADERS)
 	$(CC) $(CFLAGS) -o $@ $(SOURCES) $< $(LDLIBS)

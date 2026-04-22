@@ -174,7 +174,9 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen, size_t *tfslen,
         copy_subtree_addr(wots_addr, tree_addr);
         set_keypair_addr(wots_addr, idx_leaf);
 
-        merkle_sign(sig, root, &ctx, wots_addr, tree_addr, idx_leaf);
+        uint32_t wots_counter;
+        merkle_sign(sig, root, &ctx, wots_addr, tree_addr, idx_leaf, &wots_counter);
+        save_wots_counter(wots_counter, sig);
         sig += (SPX_WOTS_BYTES + SPX_TREE_HEIGHT * SPX_N + COUNTER_SIZE);
 
         idx_leaf = (tree & ((1 << SPX_TREE_HEIGHT)-1));
@@ -249,7 +251,7 @@ int crypto_sign_verify(const uint8_t *sig, size_t siglen, size_t tfors_siglen,
 
         copy_keypair_addr(wots_pk_addr, wots_addr);
 
-        wots_counter = get_wots_counter(sig);
+        uint32_t wots_counter = get_wots_counter(sig);
         /* The WOTS public key is only correct if the signature was correct. */
         /* Initially, root is the TFORS pk, but on subsequent iterations it is
            the root of the subtree below the currently processed subtree. */

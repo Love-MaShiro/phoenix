@@ -5,6 +5,7 @@
 #include "utilsx1.h"
 #include "wots.h"
 #include "wotsx1.h"
+#include "thash.h"
 #include "merkle.h"
 #include "address.h"
 #include "params.h"
@@ -55,7 +56,7 @@ void merkle_sign(uint8_t *sig, unsigned char *root,
             counter++;
             if (counter > MAX_HASH_TRIALS_WOTS)
                 return;
-            ull_to_bytes(((unsigned char *)(pk_addr)) + (SPX_OFFSER_COUNTER), COUNTER_SIZE, counter);
+            ull_to_bytes(((unsigned char *)(pk_addr)) + (SPX_OFFSET_COUNTER), COUNTER_SIZE, counter);
             thash_fin(digest, root, 1, ctx, pk_addr, bitmask);
             if (((digest[SPX_N - 1]) & mask) == 0)
             {
@@ -78,7 +79,7 @@ void merkle_sign(uint8_t *sig, unsigned char *root,
 
         /*Restore initial parameters for tree hash*/
         set_type(pk_addr, SPX_ADDR_TYPE_WOTSPK);
-        ull_to_bytes(((unsigned char *)(pk_addr)) + (SPX_OFFSER_COUNTER), COUNTER_SIZE, 0);
+        ull_to_bytes(((unsigned char *)(pk_addr)) + (SPX_OFFSET_COUNTER), COUNTER_SIZE, 0);
     }
     /* In this case we only try to generate the PK so no need to find the counter */
     else

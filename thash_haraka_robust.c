@@ -44,3 +44,42 @@ void thash(unsigned char *out, const unsigned char *in, unsigned int inblocks,
         haraka_S(out, SPX_N, buf, SPX_ADDR_BYTES + inblocks*SPX_N, ctx);
     }
 }
+
+void thash_init_bitmask(unsigned char *bitmask_out, unsigned int inblocks,
+           const spx_ctx *ctx, uint32_t addr[8])
+{
+    if (inblocks == 1) {
+        unsigned char buf_tmp[64];
+        unsigned char out_tmp[32];
+        memset(buf_tmp, 0, 64);
+        memcpy(buf_tmp, addr, 32);
+        haraka256(out_tmp, buf_tmp, ctx);
+        memcpy(bitmask_out, out_tmp, SPX_N);
+    } else {
+        haraka_S(bitmask_out, inblocks * SPX_N, (unsigned char *)addr, SPX_ADDR_BYTES, ctx);
+    }
+}
+
+void thash_fin(unsigned char *out, const unsigned char *in, unsigned int inblocks,
+           const spx_ctx *ctx, uint32_t addr[8], const unsigned char *bitmask)
+{
+    unsigned int i;
+    if (inblocks == 1) {
+        unsigned char buf_tmp[64];
+        unsigned char out_tmp[32];
+        memset(buf_tmp, 0, 64);
+        memcpy(buf_tmp, addr, 32);
+        for (i = 0; i < SPX_N; i++) {
+            buf_tmp[SPX_ADDR_BYTES + i] = in[i] ^ bitmask[i];
+        }
+        haraka512(out_tmp, buf_tmp, ctx);
+        memcpy(out, out_tmp, SPX_N);
+    } else {
+        SPX_VLA(uint8_t, buf, SPX_ADDR_BYTES + inblocks*SPX_N);
+        memcpy(buf, addr, 32);
+        for (i = 0; i < inblocks * SPX_N; i++) {
+            buf[SPX_ADDR_BYTES + i] = in[i] ^ bitmask[i];
+        }
+        haraka_S(out, SPX_N, buf, SPX_ADDR_BYTES + inblocks*SPX_N, ctx);
+    }
+}

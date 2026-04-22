@@ -6,9 +6,9 @@
 /* Hash output length in bytes. */
 #define SPX_N 16
 /* Height of the hypertree. */
-#define SPX_FULL_HEIGHT 64
+#define SPX_FULL_HEIGHT 63
 /* Number of subtree layer. */
-#define SPX_D 16
+#define SPX_D 21
 /* TFORS tree dimensions. */
 #define SPX_TFORS_A 9
 #define SPX_TFORS_K_PRIME 32
@@ -44,7 +44,7 @@
 
 #define SPX_WOTS_W1_LEN 26
 #define SPX_WOTS_W2_LEN 4
-#define SPX_WOTS_LEN1 SPX_WOTS_W1_LEN + SPX_WOTS_W2_LEN
+#define SPX_WOTS_LEN1 (SPX_WOTS_W1_LEN + SPX_WOTS_W2_LEN)
 
 /* SPX_WOTS_LEN2 is fixed */
 #define SPX_WOTS_LEN2 1

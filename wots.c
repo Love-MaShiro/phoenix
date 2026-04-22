@@ -49,7 +49,7 @@ static void gen_chain(unsigned char *out, const unsigned char *in,
  * Interprets an array of bytes as integers in base w.
  * We adjust the number of chains for w1 and w2 so that they just cover SPX_N - SPX_WOTS_ZERO_LAST_BITS.
  */
-static void base_w(unsigned int *output, const int out_len,
+static void base_w(unsigned int *output,
                    const unsigned char *input)
 {
     int i, j;
@@ -138,7 +138,7 @@ void wots_pk_from_sig(unsigned char *pk,
     thash_init_bitmask(bitmask, 1, ctx, wots_pk_addr);
 
     /*Set padding*/
-    ull_to_bytes(((unsigned char *)(wots_pk_addr)) + (SPX_OFFSER_COUNTER), COUNTER_SIZE, counter);
+    ull_to_bytes(((unsigned char *)(wots_pk_addr)) + (SPX_OFFSET_COUNTER), COUNTER_SIZE, counter);
     /*Calculate checksum*/
     thash_fin(digest, msg, 1, ctx, wots_pk_addr, bitmask);
 
@@ -162,7 +162,7 @@ void wots_pk_from_sig(unsigned char *pk,
         /* This chain signs the offset from the base sum */   
         lengths[SPX_WOTS_LEN1] = csum - WOTS_SUM_BASE;
         set_type(addr, SPX_ADDR_TYPE_WOTS); 
-        ull_to_bytes(((unsigned char *)(addr)) + (SPX_OFFSER_COUNTER), COUNTER_SIZE, 0);
+        ull_to_bytes(((unsigned char *)(addr)) + (SPX_OFFSET_COUNTER), COUNTER_SIZE, 0);
 
         /* Reconstruct W1 chains. */
         for (i = 0; i < SPX_WOTS_W1_LEN; i++)

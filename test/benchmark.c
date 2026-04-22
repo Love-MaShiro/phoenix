@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <time.h>
 
+#include "../hash.h"
 #include "../thash.h"
 #include "../api.h"
 #include "../tfors.h"
@@ -123,7 +124,7 @@ int main(void)
     unsigned char tfors_pk[SPX_TFORS_PK_BYTES];
     unsigned char tfors_m[SPX_TFORS_MSG_BYTES];
     unsigned char tfors_sig[SPX_TFORS_BYTES];
-    unsigned char addr[SPX_ADDR_BYTES];
+    uint32_t addr[8];
     unsigned char block[SPX_N];
 
     unsigned char wots_pk[SPX_WOTS_PK_BYTES];
@@ -138,22 +139,27 @@ int main(void)
     int i;
 
     randombytes(m, SPX_MLEN);
-    randombytes(addr, SPX_ADDR_BYTES);
+    randombytes((unsigned char *)addr, SPX_ADDR_BYTES);
+    randombytes(tfors_m, SPX_TFORS_MSG_BYTES);
+
+    randombytes(ctx.pub_seed, SPX_N);
+    randombytes(ctx.sk_seed, SPX_N);
+    initialize_hash_function(&ctx);
 
     uint32_t tfors_indices[SPX_TFORS_K];
     message_to_indices(tfors_indices, tfors_m, &ctx);
 
     printf("Parameters: n = %d, h = %d, d = %d, a = %d, k = %d, w = %d\n",
            SPX_N, SPX_FULL_HEIGHT, SPX_D, SPX_TFORS_A, SPX_TFORS_K,
-           SPX_WOTS_W);
+           SPX_WOTS_W1);
 
     printf("Running %d iterations.\n", NTESTS);
 
-    MEASURT("thash                ", 1, thash(block, block, 1, &ctx, (uint32_t*)addr));
+    MEASURT("thash                ", 1, thash(block, block, 1, &ctx, addr));
     MEASURE("Generating keypair.. ", 1, crypto_sign_keypair(pk, sk));
-    MEASURE("  - WOTS pk gen..    ", (1 << SPX_TREE_HEIGHT), wots_gen_pkx1(wots_pk, &ctx, (uint32_t *) addr));
+    MEASURE("  - WOTS pk gen..    ", (1 << SPX_TREE_HEIGHT), wots_gen_pkx1(wots_pk, &ctx, addr));
     MEASURE("Signing..            ", 1, crypto_sign(sm, &smlen, &slen, &tfslen, m, SPX_MLEN, sk));
-    MEASURE("  - WOTS pk gen..    ", SPX_D * (1 << SPX_TREE_HEIGHT), wots_gen_pkx1(wots_pk, &ctx, (uint32_t *) addr));
+    MEASURE("  - WOTS pk gen..    ", SPX_D * (1 << SPX_TREE_HEIGHT), wots_gen_pkx1(wots_pk, &ctx, addr));
     MEASURE("Verifying..          ", 1, crypto_sign_open(mout, &mlen, &slen, &tfslen, sm, smlen, pk));
 
     printf("Signature size: %llu (%.2f KiB)\n", slen, (double)slen / 1024.0);

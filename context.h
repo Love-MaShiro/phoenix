@@ -19,13 +19,9 @@ typedef struct {
 # endif
 #endif
 
-#ifdef SPX_HARAKA
+    // Always include these to allow Haraka unit tests even when not the primary hash
     uint64_t tweaked512_rc64[10][8];
     uint32_t tweaked256_rc32[10][8];
-#endif
 } spx_ctx;
 
 #endif
-
-
-

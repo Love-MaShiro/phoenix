@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "address.h"
 #include "utils.h"
@@ -331,7 +332,8 @@ int h2_generate_indices(uint32_t *indices,
     const uint32_t k_prime = SPX_TFORS_K_PRIME;
     const uint32_t log2_kp = SPX_TFORS_LOG_K_PRIME;
 
-    uint8_t  mask[k_prime / 8] = {0};
+    SPX_VLA(uint8_t, mask, (k_prime + 7) / 8);
+    memset(mask, 0, (k_prime + 7) / 8);
     uint32_t count = 0;
 
     // ==============================================
@@ -343,7 +345,11 @@ int h2_generate_indices(uint32_t *indices,
 
     // 用合并后的数据生成随机流
     unsigned char rnd[512];
-    shake256(rnd, sizeof(rnd), hash_input, sizeof(hash_input));
+#if SPX_SHA512
+    mgf1_512(rnd, sizeof(rnd), hash_input, sizeof(hash_input));
+#else
+    mgf1_256(rnd, sizeof(rnd), hash_input, sizeof(hash_input));
+#endif
     size_t rnd_ptr = 0;
 
     // ================================
@@ -360,13 +366,14 @@ int h2_generate_indices(uint32_t *indices,
             if (idx >= k_prime) continue;
 
             if (!(mask[idx / 8] & (1 << (idx % 8)))) {
-                mask[idx / 8] |= (1 << (idx % 8));
+                mask[idx / 8] |= (uint8_t)(1 << (idx % 8));
                 indices[count++] = idx;
             }
         }
     } else {
         // 情况 B：多选 → 反选丢弃（你要的高效逻辑）
-        uint8_t reject_mask[k_prime / 8] = {0};
+        SPX_VLA(uint8_t, reject_mask, (k_prime + 7) / 8);
+        memset(reject_mask, 0, (k_prime + 7) / 8);
         uint32_t reject_num = k_prime - k;
         count = 0;
 
@@ -379,7 +386,7 @@ int h2_generate_indices(uint32_t *indices,
             if (idx >= k_prime) continue;
 
             if (!(reject_mask[idx / 8] & (1 << (idx % 8)))) {
-                reject_mask[idx / 8] |= (1 << (idx % 8));
+                reject_mask[idx / 8] |= (uint8_t)(1 << (idx % 8));
                 count++;
             }
         }

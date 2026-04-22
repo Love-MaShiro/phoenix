@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "address.h"
 #include "utils.h"
@@ -119,7 +120,8 @@ int h2_generate_indices(uint32_t indices[SPX_TFORS_K],
     shake256(rnd, sizeof(rnd), input, sizeof(input));
     size_t rnd_ptr = 0;
 
-    uint8_t mask[t / 8] = {0};
+    SPX_VLA(uint8_t, mask, (t + 7) / 8);
+    memset(mask, 0, (t + 7) / 8);
     uint32_t count = 0;
 
     if (k <= t / 2) {
@@ -132,12 +134,13 @@ int h2_generate_indices(uint32_t indices[SPX_TFORS_K],
             uint32_t idx = val & ((1U << log2_t) - 1);
             if (idx >= t) continue;
             if (!(mask[idx / 8] & (1 << (idx % 8)))) {
-                mask[idx / 8] |= (1 << (idx % 8));
+                mask[idx / 8] |= (uint8_t)(1 << (idx % 8));
                 indices[count++] = idx;
             }
         }
     } else {
-        uint8_t reject_mask[t / 8] = {0};
+        SPX_VLA(uint8_t, reject_mask, (t + 7) / 8);
+        memset(reject_mask, 0, (t + 7) / 8);
         uint32_t reject_need = t - k;
         count = 0;
         while (count < reject_need) {
@@ -149,7 +152,7 @@ int h2_generate_indices(uint32_t indices[SPX_TFORS_K],
             uint32_t idx = val & ((1U << log2_t) - 1);
             if (idx >= t) continue;
             if (!(reject_mask[idx / 8] & (1 << (idx % 8)))) {
-                reject_mask[idx / 8] |= (1 << (idx % 8));
+                reject_mask[idx / 8] |= (uint8_t)(1 << (idx % 8));
                 count++;
             }
         }

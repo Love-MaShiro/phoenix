@@ -3,7 +3,7 @@
 
 #include "address.h"
 #include "params.h"
-#include "counters.h"
+#include "counter.h"
 #include "api.h"
 
 /* The WOTS+C counter is stored just after the WOTS signature and the tree authentication path*/

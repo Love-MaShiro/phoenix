@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <time.h>
 
+#include "../hash.h"
 #include "../api.h"
 #include "../tfors.h"
 #include "../params.h"
@@ -106,6 +107,12 @@ static void display_result(double result, unsigned long long *l, size_t llen, un
 
 #define MEASURE(TEXT, MUL, FNCALL, STAGE) MEASURE_GENERIC(TEXT, MUL, FNCALL, 1, STAGE)
 
+static void tfors_gen_sk(unsigned char *sk, const spx_ctx *ctx,
+                        uint32_t tfors_leaf_addr[8])
+{
+    prf_addr(sk, ctx, tfors_leaf_addr);
+}
+
 int main(void)
 {
     /* Make stdout buffer more responsive. */
@@ -114,12 +121,13 @@ int main(void)
 
     spx_ctx ctx;
     
-    // 初始化上下文（需要设置 pub_seed 和 sk_seed）
+    /* Init context and set seeds */
     randombytes(ctx.pub_seed, SPX_N);
     randombytes(ctx.sk_seed, SPX_N);
+    initialize_hash_function(&ctx);
 
     unsigned char tfors_pk[SPX_TFORS_PK_BYTES];
-    unsigned char tfors_sk[SPX_TFORS_SK_BYTES];
+    unsigned char tfors_sk[SPX_N * SPX_TFORS_K];
     unsigned char tfors_m[SPX_TFORS_MSG_BYTES];
     unsigned char tfors_sig[SPX_TFORS_BYTES];
     uint32_t tfors_addr[8] = {0};
@@ -134,15 +142,12 @@ int main(void)
 
     printf("Parameters: n = %d, h = %d, d = %d, b = %d, k = %d, w = %d\n",
            SPX_N, SPX_FULL_HEIGHT, SPX_D, SPX_TFORS_A, SPX_TFORS_K,
-           SPX_WOTS_W);
-    printf("TFORS parameters:\n");
-    printf("  - Tree height: %d\n", SPX_TFORS_TREE_HEIGHT);
-    printf("  - Total leaves: %d\n", SPX_TFORS_TOTAL_LEAVES);
-    printf("  - Message bytes: %d\n", SPX_TFORS_MSG_BYTES);
-    printf("  - Max signature bytes: %d\n", SPX_TFORS_MAX_SIG_BYTES);
+           SPX_WOTS_W1);
+    printf("  - Tree height: %d\n", SPX_TFORS_HEIGHT);
+    printf("  - Total leaves: %d\n", (1 << SPX_TFORS_HEIGHT));
+    printf("  - Max signature bytes: %d\n", (int)SPX_TFORS_BYTES);
     printf("\nRunning %d iterations.\n\n", NTESTS);
 
-    // 测试 TFORS 密钥生成
     MEASURE("TFORS key generation..  ", 1, {
         for (i = 0; i < SPX_TFORS_K; i++) {
             set_tree_height(tfors_addr, 0);
@@ -152,13 +157,11 @@ int main(void)
         }
     }, "TFORS Key Generation");
 
-    // 测试 TFORS 签名
     message_to_indices(indices, tfors_m, &ctx);
     MEASURE("TFORS signing..         ", 1, 
             tfors_sign(tfors_sig, tfors_pk, indices, &ctx, tfors_addr), 
             "TFORS Signing");
 
-    // 测试 TFORS 验签
     MEASURE("TFORS verification..    ", 1, 
             tfors_pk_from_sig(tfors_pk, tfors_sig, tfors_m, &ctx, tfors_addr), 
             "TFORS Verification");
@@ -170,11 +173,4 @@ int main(void)
            SPX_TFORS_PK_BYTES, SPX_TFORS_PK_BYTES / 1024.0);
 
     return 0;
-}
-
-// tfors_gen_sk 函数实现
-static void tfors_gen_sk(unsigned char *sk, const spx_ctx *ctx,
-                        uint32_t tfors_leaf_addr[8])
-{
-    prf_addr(sk, ctx, tfors_leaf_addr);
 }

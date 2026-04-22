@@ -5,8 +5,10 @@
 
 #include "../haraka.c"
 #include "../randombytes.h"
+#include "../context.h"
 
 static int test_haraka_S_incremental(void) {
+    spx_ctx ctx;
     unsigned char input[521];
     unsigned char check[521];
     unsigned char output[521];
@@ -20,23 +22,24 @@ static int test_haraka_S_incremental(void) {
     int squeezed;
     int returncode = 0;
 
+    memset(&ctx, 0, sizeof(spx_ctx));
     randombytes(input, 521);
 
-    haraka_S(check, 521, input, 521);
+    haraka_S(check, 521, input, 521, &ctx);
 
     haraka_S_inc_init(s_inc_absorb);
 
     absorbed = 0;
     for (i = 0; i < 521 && absorbed + i <= 521; i++) {
-        haraka_S_inc_absorb(s_inc_absorb, input + absorbed, i);
+        haraka_S_inc_absorb(s_inc_absorb, input + absorbed, i, &ctx);
         absorbed += i;
     }
-    haraka_S_inc_absorb(s_inc_absorb, input + absorbed, 521 - absorbed);
+    haraka_S_inc_absorb(s_inc_absorb, input + absorbed, 521 - absorbed, &ctx);
 
     haraka_S_inc_finalize(s_inc_absorb);
 
     memset(s_combined, 0, 64);
-    haraka_S_absorb(s_combined, HARAKAS_RATE, input, 521, 0x1F);
+    haraka_S_absorb(s_combined, HARAKAS_RATE, input, 521, 0x1F, &ctx);
 
     if (memcmp(s_inc_absorb, s_combined, 64 * sizeof(uint8_t))) {
         printf("ERROR haraka_S state after incremental absorb did not match all-at-once absorb.\n");
@@ -55,7 +58,7 @@ static int test_haraka_S_incremental(void) {
 
     memcpy(s_inc_both, s_inc_absorb, 65 * sizeof(uint8_t));
 
-    haraka_S_squeezeblocks(output, 3, s_inc_absorb, HARAKAS_RATE);
+    haraka_S_squeezeblocks(output, 3, s_inc_absorb, HARAKAS_RATE, &ctx);
 
     if (memcmp(check, output, 3*HARAKAS_RATE)) {
         printf("ERROR haraka_S incremental absorb did not match haraka_S.\n");
@@ -73,12 +76,12 @@ static int test_haraka_S_incremental(void) {
     }
 
     memset(s_inc_squeeze, 0, 65);
-    haraka_S_absorb(s_inc_squeeze, HARAKAS_RATE, input, 521, 0x1F);
+    haraka_S_absorb(s_inc_squeeze, HARAKAS_RATE, input, 521, 0x1F, &ctx);
     s_inc_squeeze[64] = 0;
 
     memcpy(s_inc_squeeze_all, s_inc_squeeze, 65 * sizeof(uint8_t));
 
-    haraka_S_inc_squeeze(output, 521, s_inc_squeeze_all);
+    haraka_S_inc_squeeze(output, 521, s_inc_squeeze_all, &ctx);
 
     if (memcmp(check, output, 521)) {
         printf("ERROR haraka_S incremental squeeze-all did not match haraka_S.\n");
@@ -98,33 +101,23 @@ static int test_haraka_S_incremental(void) {
     squeezed = 0;
     memset(output, 0, 521);
     for (i = 0; i < 521 && squeezed + i <= 521; i++) {
-        haraka_S_inc_squeeze(output + squeezed, i, s_inc_squeeze);
+        haraka_S_inc_squeeze(output + squeezed, (size_t)i, s_inc_squeeze, &ctx);
         squeezed += i;
     }
-    haraka_S_inc_squeeze(output + squeezed, 521 - squeezed, s_inc_squeeze);
+    haraka_S_inc_squeeze(output + squeezed, (size_t)(521 - squeezed), s_inc_squeeze, &ctx);
 
     if (memcmp(check, output, 521)) {
-        printf("ERROR haraka_S incremental squeeze did not match haraka_S.\n");
-        printf("  Expected: ");
-        for (i = 0; i < 521; i++) {
-            printf("%02X", check[i]);
-        }
-        printf("\n");
-        printf("  Received: ");
-        for (i = 0; i < 521; i++) {
-            printf("%02X", output[i]);
-        }
-        printf("\n");
+        printf("ERROR haraka_S incremental squeeze-chunks did not match haraka_S.\n");
         returncode = 1;
     }
 
     squeezed = 0;
     memset(output, 0, 521);
     for (i = 0; i < 521 && squeezed + i <= 521; i++) {
-        haraka_S_inc_squeeze(output + squeezed, i, s_inc_both);
+        haraka_S_inc_squeeze(output + squeezed, (size_t)i, s_inc_both, &ctx);
         squeezed += i;
     }
-    haraka_S_inc_squeeze(output + squeezed, 521 - squeezed, s_inc_both);
+    haraka_S_inc_squeeze(output + squeezed, (size_t)(521 - squeezed), s_inc_both, &ctx);
 
     if (memcmp(check, output, 521)) {
         printf("ERROR haraka_S incremental absorb + squeeze did not match haraka_S.\n");

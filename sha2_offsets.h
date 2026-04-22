@@ -15,6 +15,8 @@
 #define SPX_OFFSET_TREE_HGT  17  /* The byte used to specify the height of this node in the TFORS or Merkle tree */
 #define SPX_OFFSET_TREE_INDEX 18 /* The start of the 4 byte field used to specify the node in the TFORS or Merkle tree */
 
+#define SPX_OFFSET_COUNTER   24 /* The start of the 4 byte field used to specify the counter for WOTS+C */
+
 #define SPX_SHA2 1
 
 #endif /* SHA2_OFFSETS_H_ */

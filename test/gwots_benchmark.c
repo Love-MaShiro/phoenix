@@ -122,7 +122,7 @@ int main(void)
 
     unsigned char message[SPX_N];
     unsigned char root[SPX_N];
-    unsigned char sig[SPX_WOTS_BYTES + SPX_TREE_HEIGHT * SPX_N];
+    unsigned char sig[SPX_WOTS_BYTES + SPX_TREE_HEIGHT * SPX_N + COUNTER_SIZE];
     unsigned char recovered_pk[SPX_WOTS_PK_BYTES];
     unsigned char recovered_leaf[SPX_N];
     unsigned char computed_root[SPX_N];
