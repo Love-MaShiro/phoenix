@@ -149,6 +149,8 @@ int main(void)
     uint32_t tfors_indices[SPX_TFORS_K];
     message_to_indices(tfors_indices, tfors_m, &ctx);
 
+    printf("===============================================================\n");
+    printf("Parameter set: %s\n", PARAMNAME);
     printf("Parameters: n = %d, h = %d, d = %d, a = %d, k = %d, w = %d\n",
            SPX_N, SPX_FULL_HEIGHT, SPX_D, SPX_TFORS_A, SPX_TFORS_K,
            SPX_WOTS_W1);
@@ -162,9 +164,9 @@ int main(void)
     MEASURE("  - WOTS pk gen..    ", SPX_D * (1 << SPX_TREE_HEIGHT), wots_gen_pkx1(wots_pk, &ctx, addr));
     MEASURE("Verifying..          ", 1, crypto_sign_open(mout, &mlen, &slen, &tfslen, sm, smlen, pk));
 
-    printf("Signature size: %llu (%.2f KiB)\n", slen, (double)slen / 1024.0);
-    printf("Public key size: %d (%.2f KiB)\n", SPX_PK_BYTES, SPX_PK_BYTES / 1024.0);
-    printf("Secret key size: %d (%.2f KiB)\n", SPX_SK_BYTES, SPX_SK_BYTES / 1024.0);
+    printf("Signature size: %llu bytes\n", smlen);
+    printf("Public key size: %d bytes\n", SPX_PK_BYTES);
+    printf("Secret key size: %d bytes\n", SPX_SK_BYTES);
 
     free(m);
     free(sm);

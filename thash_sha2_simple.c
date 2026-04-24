@@ -7,7 +7,7 @@
 #include "utils.h"
 #include "sha2.h"
 
-#if SPX_SHA512
+#ifdef SPX_SHA512
 static void thash_512(unsigned char *out, const unsigned char *in, unsigned int inblocks,
            const spx_ctx *ctx, uint32_t addr[8]);
 #endif
@@ -19,8 +19,8 @@ void thash(unsigned char *out, const unsigned char *in, unsigned int inblocks,
            const spx_ctx *ctx, uint32_t addr[8])
 {
     
-#if SPX_SHA512
-    if (inblocks > 1) {
+#ifdef SPX_SHA512
+    if (inblocks > 1 || SPX_N > 32) {
 	thash_512(out, in, inblocks, ctx, addr);
         return;
     }
@@ -40,7 +40,7 @@ void thash(unsigned char *out, const unsigned char *in, unsigned int inblocks,
     memcpy(out, outbuf, SPX_N);
 }
 
-#if SPX_SHA512
+#ifdef SPX_SHA512
 static void thash_512(unsigned char *out, const unsigned char *in, unsigned int inblocks,
            const spx_ctx *ctx, uint32_t addr[8])
 {
@@ -73,8 +73,8 @@ void thash_init_bitmask(unsigned char *bitmask_out, unsigned int inblocks,
     memcpy(buf + SPX_N, addr, SPX_SHA256_ADDR_BYTES);
 
     /* Generate the mask */
-#if SPX_SHA512
-    if (SPX_N == 32) { // Usually for 256-bit security
+#ifdef SPX_SHA512
+    if (inblocks > 1 || SPX_N >= 32) {
         mgf1_512(bitmask_out, inblocks * SPX_N, buf, SPX_N + SPX_SHA256_ADDR_BYTES);
     } else 
 #endif
@@ -103,8 +103,8 @@ void thash_fin(unsigned char *out, const unsigned char *in, unsigned int inblock
     }
 
     /* 3. Finalize the hash using the pre-computed state (which already absorbed pub_seed) */
-#if SPX_SHA512
-    if (inblocks > 1 || SPX_N == 32) {
+#ifdef SPX_SHA512
+    if (inblocks > 1 || SPX_N >= 32) {
         uint8_t sha512_state[72];
         memcpy(sha512_state, ctx->state_seeded_512, 72);
         sha512_inc_finalize(outbuf, sha512_state, buf, SPX_SHA256_ADDR_BYTES + inblocks * SPX_N);

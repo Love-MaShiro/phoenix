@@ -40,6 +40,20 @@ void initialize_hash_function(spx_ctx *ctx)
 void prf_addr(unsigned char *out, const spx_ctx *ctx,
               const uint32_t addr[8])
 {
+#ifdef SPX_SHA512
+    uint8_t sha2_state[72];
+    unsigned char buf[SPX_SHA256_ADDR_BYTES + SPX_N];
+    unsigned char outbuf[SPX_SHA512_OUTPUT_BYTES];
+
+    /* Retrieve precomputed state containing pub_seed */
+    memcpy(sha2_state, ctx->state_seeded_512, 72 * sizeof(uint8_t));
+
+    /* Remainder: ADDR^c ‖ SK.seed */
+    memcpy(buf, addr, SPX_SHA256_ADDR_BYTES);
+    memcpy(buf + SPX_SHA256_ADDR_BYTES, ctx->sk_seed, SPX_N);
+
+    sha512_inc_finalize(outbuf, sha2_state, buf, SPX_SHA256_ADDR_BYTES + SPX_N);
+#else
     uint8_t sha2_state[40];
     unsigned char buf[SPX_SHA256_ADDR_BYTES + SPX_N];
     unsigned char outbuf[SPX_SHA256_OUTPUT_BYTES];
@@ -52,6 +66,7 @@ void prf_addr(unsigned char *out, const spx_ctx *ctx,
     memcpy(buf + SPX_SHA256_ADDR_BYTES, ctx->sk_seed, SPX_N);
 
     sha256_inc_finalize(outbuf, sha2_state, buf, SPX_SHA256_ADDR_BYTES + SPX_N);
+#endif
 
     memcpy(out, outbuf, SPX_N);
 }
@@ -327,7 +342,6 @@ int h2_generate_indices(uint32_t *indices,
                         const unsigned char *msg_digest,
                         const spx_ctx *ctx)
 {
-    printf("sha2 shixian h2");
     const uint32_t k = SPX_TFORS_K;
     const uint32_t k_prime = SPX_TFORS_K_PRIME;
     const uint32_t log2_kp = SPX_TFORS_LOG_K_PRIME;
@@ -345,7 +359,7 @@ int h2_generate_indices(uint32_t *indices,
 
     // 用合并后的数据生成随机流
     unsigned char rnd[512];
-#if SPX_SHA512
+#ifdef SPX_SHA512
     mgf1_512(rnd, sizeof(rnd), hash_input, sizeof(hash_input));
 #else
     mgf1_256(rnd, sizeof(rnd), hash_input, sizeof(hash_input));

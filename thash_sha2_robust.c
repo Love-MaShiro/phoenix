@@ -7,7 +7,7 @@
 #include "utils.h"
 #include "sha2.h"
 
-#if SPX_SHA512
+#ifdef SPX_SHA512
 static void thash_512(unsigned char *out, const unsigned char *in, unsigned int inblocks,
            const spx_ctx *ctx, uint32_t addr[8]);
 #endif
@@ -19,8 +19,8 @@ void thash(unsigned char *out, const unsigned char *in, unsigned int inblocks,
            const spx_ctx *ctx, uint32_t addr[8])
 {
     
-#if SPX_SHA512
-    if (inblocks > 1) {
+#ifdef SPX_SHA512
+    if (inblocks > 1 || SPX_N > 32) {
 	thash_512(out, in, inblocks, ctx, addr);
         return;
     }
@@ -47,7 +47,7 @@ void thash(unsigned char *out, const unsigned char *in, unsigned int inblocks,
     memcpy(out, outbuf, SPX_N);
 }
 
-#if SPX_SHA512
+#ifdef SPX_SHA512
 static void thash_512(unsigned char *out, const unsigned char *in, unsigned int inblocks,
            const spx_ctx *ctx, uint32_t addr[8])
 {
@@ -86,9 +86,9 @@ void thash_init_bitmask(unsigned char *bitmask_out, unsigned int inblocks,
     memcpy(buf, ctx->pub_seed, SPX_N);
     memcpy(buf + SPX_N, addr, SPX_SHA256_ADDR_BYTES);
 
-#if SPX_SHA512
+#ifdef SPX_SHA512
     /* Use MGF1-512 if we are in 512-bit mode (typically for 256-bit security) */
-    if (inblocks > 1 || SPX_N == 32) {
+    if (inblocks > 1 || SPX_N >= 32) {
         mgf1_512(bitmask_out, inblocks * SPX_N, buf, SPX_N + SPX_SHA256_ADDR_BYTES);
     } else 
 #endif
@@ -104,8 +104,8 @@ void thash_init_bitmask(unsigned char *bitmask_out, unsigned int inblocks,
 void thash_fin(unsigned char *out, const unsigned char *in, unsigned int inblocks,
                const spx_ctx *ctx, uint32_t addr[8], const unsigned char *bitmask)
 {
-#if SPX_SHA512
-    if (inblocks > 1 || SPX_N == 32) {
+#ifdef SPX_SHA512
+    if (inblocks > 1 || SPX_N >= 32) {
         unsigned char outbuf[SPX_SHA512_OUTPUT_BYTES];
         /* Buffer for (addr || XORed_data) */
         SPX_VLA(uint8_t, buf, SPX_SHA256_ADDR_BYTES + inblocks * SPX_N);

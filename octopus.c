@@ -127,7 +127,7 @@ void octopus_compute(octopus_auth *auth,
             if (i + 1 < current_len && current_indices[i + 1] == sibling_idx) {
                 i += 2;
             } else {
-                if (level < tfors_height - 1) {
+                if (level < tfors_height) {
                     auth->entries[auth->count].level = level;
                     auth->entries[auth->count].index = sibling_idx;
                     auth->count++;
@@ -194,19 +194,13 @@ void octopus_compute_auth_paths(unsigned char root[SPX_N],
         uint32_t leaf_idx = indices[i];
         is_target[leaf_idx] = 1;
 
-        // printf("tfors_sign: pub_seed = ");
-        // for(int i=0; i<SPX_N && i<16; i++) printf("%02x", ctx->pub_seed[i]);
-        // printf("\n");
-
         uint32_t tfors_leaf_addr[8] = {0};
         copy_keypair_addr(tfors_leaf_addr, tree_addr);
         set_type(tfors_leaf_addr, SPX_ADDR_TYPE_TFORSTREE);
         set_tree_height(tfors_leaf_addr, 0);
         set_tree_index(tfors_leaf_addr, indices[i]);
-        // print_spx_addr("fors_leaf_addr (initial)", tfors_leaf_addr);
         
         tfors_sk_to_leaf(&target_hash[leaf_idx * SPX_N], leaf_sk[i], ctx, tfors_leaf_addr);
-    
     }
     
     // 5. 使用栈遍历所有叶子
@@ -216,10 +210,11 @@ void octopus_compute_auth_paths(unsigned char root[SPX_N],
     for (uint32_t idx = 0; idx <= max_leaf_idx; idx++) {
         unsigned char current[2 * SPX_N];
         
-        // 获取当前叶子的哈希
+        // 如果是目标叶子，使用已经计算好的哈希
         if (is_target[idx]) {
             memcpy(&current[SPX_N], &target_hash[idx * SPX_N], SPX_N);
-        } else {
+        } else if (idx < SPX_TFORS_K * (1 << SPX_TFORS_A)) {
+            // 否则，如果是在有效叶子范围内，计算它的哈希
             unsigned char sk[SPX_N];
             uint32_t leaf_addr[8];
             memset(leaf_addr, 0, 8 * sizeof(uint32_t));
@@ -228,8 +223,13 @@ void octopus_compute_auth_paths(unsigned char root[SPX_N],
             set_tree_index(leaf_addr, idx);
             set_type(leaf_addr, SPX_ADDR_TYPE_TFORSPRF);
             prf_addr(sk, ctx, leaf_addr);
+            
             set_type(leaf_addr, SPX_ADDR_TYPE_TFORSTREE);
-            thash(&current[SPX_N], sk, 1, ctx, leaf_addr);
+            tfors_sk_to_leaf(&current[SPX_N], sk, ctx, leaf_addr);
+        } else {
+            // 超出有效叶子范围的节点（用于补全成满二叉树），使用全 0 或特定哈希
+            // 这里使用全 0，因为它们不应该影响最终根的安全性
+            memset(&current[SPX_N], 0, SPX_N);
         }
         
         // 向上合并

@@ -1,0 +1,61 @@
+SPHINCS+ Comprehensive Benchmark Results - 2026年 04月 24日 星期五 14:26:03 CST
+===============================================================
+Variant: sphincs-sha2-128f (simple)
+Success Rate: 100.00%
+KeyGen: 9,574,959 cycles
+Sign:   204,990,347 cycles
+Verify: 5,015,273 cycles
+Signature Size: 11876 bytes
+---------------------------------------------------------------
+Variant: sphincs-sha2-128s (simple)
+Success Rate: 0.00%
+KeyGen: 1,654,934,028 cycles
+Sign:   25,063,078 cycles
+Verify: 453,061 cycles
+Signature Size: 4980 bytes
+---------------------------------------------------------------
+Variant: sphincs-sha2-192f (simple)
+Success Rate: 100.00%
+KeyGen: 44,964,896 cycles
+Sign:   673,412,344 cycles
+Verify: 9,417,998 cycles
+Signature Size: 22960 bytes
+---------------------------------------------------------------
+Variant: sphincs-sha2-192s (simple)
+Success Rate: 100.00%
+KeyGen: 4,201,414,970 cycles
+Sign:   33,739,550,527 cycles
+Verify: 33,332,954 cycles
+Signature Size: 11732 bytes
+---------------------------------------------------------------
+sphincs-sha2-256f (simple): BUILD FAILED
+Variant: sphincs-sha2-256s (simple)
+Success Rate: 100.00%
+KeyGen: 3,194,457,536 cycles
+Sign:   26,806,075,217 cycles
+Verify: 25,543,863 cycles
+Signature Size: 20740 bytes
+---------------------------------------------------------------
+sphincs-sha2-512f (simple): BUILD FAILED
+sphincs-sha2-512s (simple): BUILD FAILED
+Variant: sphincs-shake-128f (simple)
+Success Rate: 100.00%
+KeyGen: 16,296,716 cycles
+Sign:    cycles
+Verify:  cycles
+Signature Size:  bytes
+---------------------------------------------------------------
+Variant: sphincs-shake-128s (simple)
+Success Rate: 
+KeyGen: 2,854,254,368 cycles
+Sign:    cycles
+Verify:  cycles
+Signature Size:  bytes
+---------------------------------------------------------------
+Variant: sphincs-shake-192f (simple)
+Success Rate: 100.00%
+KeyGen: 41,008,020 cycles
+Sign:   619,126,110 cycles
+Verify: 8,572,049 cycles
+Signature Size: 22960 bytes
+---------------------------------------------------------------

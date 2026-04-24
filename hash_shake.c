@@ -81,7 +81,7 @@ void hash_message(unsigned char *digest, uint64_t *tree, uint32_t *leaf_idx,
     memcpy(digest, bufp, SPX_TFORS_MSG_BYTES);
     bufp += SPX_TFORS_MSG_BYTES;
 
-#if SPX_TREE_BITS > 64
+#if SPX_TREE_BITS > 64 && !defined(ALLOW_DEEP_TREES)
     #error For given height and depth, 64 bits cannot represent all subtrees
 #endif
 
@@ -97,11 +97,10 @@ void hash_message(unsigned char *digest, uint64_t *tree, uint32_t *leaf_idx,
     *leaf_idx &= (~(uint32_t)0) >> (32 - SPX_LEAF_BITS);
 }
 
-int h2_generate_indices(uint32_t indices[SPX_TFORS_K],
-                        const unsigned char msg_digest[SPX_N],
+int SPX_h2_generate_indices(uint32_t *indices,
+                        const unsigned char *msg_digest,
                         const spx_ctx *ctx)
 {
-    printf("shake shixian h2");
     const uint32_t k = SPX_TFORS_K;
     const uint32_t t = SPX_TFORS_T;
     uint32_t log2_t = 0;

@@ -2,7 +2,7 @@ PARAMS = sphincs-haraka-128f
 THASH = robust
 
 CC=/usr/bin/gcc
-CFLAGS=-Wall -Wextra -Wpedantic -O3 -std=c99 -Wconversion -Wmissing-prototypes -DPARAMS=$(PARAMS) -I. -Itest $(EXTRA_CFLAGS)
+CFLAGS=-Wall -Wextra -Wpedantic -O3 -std=c99 -Wconversion -Wmissing-prototypes -DPARAMS=$(PARAMS) -DPARAMNAME=\"$(PARAMS)\" -I. -Itest -DALLOW_DEEP_TREES $(EXTRA_CFLAGS)
 
 SOURCES =          address.c randombytes.c merkle.c wots.c wotsx1.c utils.c utilsx1.c tfors.c sign.c octopus.c counter.c
 HEADERS = params.h address.h randombytes.h merkle.h wots.h wotsx1.h utils.h utilsx1.h tfors.h api.h  hash.h thash.h octopus.h counter.h

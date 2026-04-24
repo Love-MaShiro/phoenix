@@ -11,6 +11,9 @@
 
 int main(void)
 {
+    printf("===============================================================\n");
+    printf("Testing SPHINCS+ variant: %s\n", PARAMNAME);
+    printf("===============================================================\n");
     int ret = 0;
     int i;
     int success_count = 0;

@@ -15,6 +15,7 @@
 #define SPX_TFORS_LOG_K_PRIME 5
 #define SPX_TFORS_K 27
 #define SPX_TFORS_HEIGHT (SPX_TFORS_LOG_K_PRIME + SPX_TFORS_A)
+#define SPX_TFORS_T (1 << SPX_TFORS_A)
 /* Winternitz parameter, */
 #define SPX_WOTS_W1 16
 #define SPX_WOTS_W2 32
