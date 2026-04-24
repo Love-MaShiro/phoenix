@@ -4,22 +4,22 @@
 #define SPX_NAMESPACE(s) SPX_##s
 
 /* Hash output length in bytes. */
-#define SPX_N 24
+#define SPX_N 64
 /* Height of the hypertree. */
-#define SPX_FULL_HEIGHT 72
+#define SPX_FULL_HEIGHT 77
 /* Number of subtree layer. */
-#define SPX_D 8
+#define SPX_D 7
 /* TFORS tree dimensions. */
-#define SPX_TFORS_A 10
+#define SPX_TFORS_A 29
 #define SPX_TFORS_K_PRIME 32
 #define SPX_TFORS_LOG_K_PRIME 5
-#define SPX_TFORS_K 18
+#define SPX_TFORS_K 17
 #define SPX_TFORS_HEIGHT (SPX_TFORS_LOG_K_PRIME + SPX_TFORS_A)
 /* Winternitz parameter, */
-#define SPX_WOTS_W1 128
-#define SPX_WOTS_LOGW1 7
-#define SPX_WOTS_W2 256
-#define SPX_WOTS_LOGW2 8
+#define SPX_WOTS_W1 32
+#define SPX_WOTS_LOGW1 5
+#define SPX_WOTS_W2 64
+#define SPX_WOTS_LOGW2 6
 
 /* The hash function is defined by linking a different hash.c file, as opposed
    to setting a #define constant. */
@@ -28,8 +28,8 @@
 #define SPX_ADDR_BYTES 32
 
 /* WOTS parameters. */
-#define SPX_WOTS_W1_LEN 16
-#define SPX_WOTS_W2_LEN 10
+#define SPX_WOTS_W1_LEN 64
+#define SPX_WOTS_W2_LEN 32
 #define SPX_WOTS_LEN1 SPX_WOTS_W1_LEN + SPX_WOTS_W2_LEN
 
 /* SPX_WOTS_LEN2 is fixed */
@@ -101,6 +101,6 @@
 #define SPX_PK_BYTES (2 * SPX_N)
 #define SPX_SK_BYTES (2 * SPX_N + SPX_PK_BYTES)
 
-#include "../sha2_offsets.h"
+#include "../shake_offsets.h"
 
 #endif
