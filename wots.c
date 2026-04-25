@@ -60,7 +60,13 @@ static void base_w(unsigned int *output,
         output[i] = 0;
         for (j = 0; j < SPX_WOTS_LOGW1; j++)
         {
-            output[i] ^= ((input[offset >> 3] >> (offset & 0x7)) & 0x1) << j;
+            unsigned int byte_pos = offset >> 3;
+            unsigned int bit_in_byte = offset & 0x7;
+            unsigned int bit = 0;
+            if (byte_pos < SPX_N) {
+                bit = (unsigned int)((input[byte_pos] >> bit_in_byte) & 0x1);
+            }
+            output[i] ^= bit << j;
             offset++;
         }
     }
@@ -71,7 +77,13 @@ static void base_w(unsigned int *output,
         output[i] = 0;
         for (j = 0; j < SPX_WOTS_LOGW2; j++)
         {
-            output[i] ^= ((input[offset >> 3] >> (offset & 0x7)) & 0x1) << j;
+            unsigned int byte_pos = offset >> 3;
+            unsigned int bit_in_byte = offset & 0x7;
+            unsigned int bit = 0;
+            if (byte_pos < SPX_N) {
+                bit = (unsigned int)((input[byte_pos] >> bit_in_byte) & 0x1);
+            }
+            output[i] ^= bit << j;
             offset++;
         }
     }
@@ -155,9 +167,6 @@ void wots_pk_from_sig(unsigned char *pk,
     {
         /* Validation successful: proceed with PK reconstruction */
 
-        /* Set the value of the last chain (the single checksum chain) */
-        /* This chain signs the offset from the base sum */   
-        lengths[SPX_WOTS_LEN1] = csum - WOTS_SUM_BASE;
         set_type(addr, SPX_ADDR_TYPE_WOTS); 
         ull_to_bytes(((unsigned char *)(addr)) + (SPX_OFFSET_COUNTER), COUNTER_SIZE, 0);
 
@@ -177,9 +186,11 @@ void wots_pk_from_sig(unsigned char *pk,
                       lengths[i], SPX_WOTS_W2 - 1 - lengths[i], ctx, addr, SPX_WOTS_W2);
         }
 
-        /* Reconstruct checksum chain. */
-        set_chain_addr(addr, i);
-        gen_chain(pk + i * SPX_N, sig + i * SPX_N,
-                  lengths[i], SPX_WOTS_CHECKSUM_W - 1 - lengths[i], ctx, addr, SPX_WOTS_CHECKSUM_W);
+        if (SPX_WOTS_LEN2 > 0) {
+            lengths[SPX_WOTS_LEN1] = (unsigned int)(csum - WOTS_SUM_BASE);
+            set_chain_addr(addr, i);
+            gen_chain(pk + i * SPX_N, sig + i * SPX_N,
+                      lengths[i], SPX_WOTS_CHECKSUM_W - 1 - lengths[i], ctx, addr, SPX_WOTS_CHECKSUM_W);
+        }
     }
 }

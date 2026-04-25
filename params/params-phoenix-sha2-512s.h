@@ -5,6 +5,7 @@
 
 /* Hash output length in bytes. */
 #define SPX_N 64
+#define SPX_SHA512 1
 /* Height of the hypertree. */
 #define SPX_FULL_HEIGHT 70
 /* Number of subtree layer. */

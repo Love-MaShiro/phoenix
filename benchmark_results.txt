@@ -1,61 +1,114 @@
-SPHINCS+ Comprehensive Benchmark Results - 2026年 04月 24日 星期五 14:26:03 CST
+Phoenix Comprehensive Benchmark Results - 2026年 04月 25日 星期六 11:07:01 CST
 ===============================================================
-Variant: sphincs-sha2-128f (simple)
+Variant: phoenix-sha2-128f (simple)
 Success Rate: 100.00%
-KeyGen: 9,574,959 cycles
-Sign:   204,990,347 cycles
-Verify: 5,015,273 cycles
-Signature Size: 11876 bytes
+KeyGen: 9,333,054 cycles
+Sign:   205,414,025 cycles
+Verify: 4,988,246 cycles
+Signature Size: 11684 bytes
 ---------------------------------------------------------------
-Variant: sphincs-sha2-128s (simple)
+Variant: phoenix-sha2-128s (simple)
+Success Rate: 100.00%
+KeyGen: 1,738,936,122 cycles
+Sign:   14,369,575,320 cycles
+Verify: 14,050,262 cycles
+Signature Size: 5204 bytes
+---------------------------------------------------------------
+Variant: phoenix-sha2-192f (simple)
+Success Rate: 100.00%
+KeyGen: 44,953,549 cycles
+Sign:   679,218,168 cycles
+Verify: 9,404,401 cycles
+Signature Size: 22816 bytes
+---------------------------------------------------------------
+Variant: phoenix-sha2-192s (simple)
+Success Rate: 100.00%
+KeyGen: 4,188,806,335 cycles
+Sign:   33,613,949,570 cycles
+Verify: 33,424,804 cycles
+Signature Size: 11540 bytes
+---------------------------------------------------------------
+Variant: phoenix-sha2-256f (simple)
+Success Rate: 100.00%
+KeyGen: 118,888,734 cycles
+Sign:   1,673,351,979 cycles
+Verify: 10,711,886 cycles
+Signature Size: 35024 bytes
+---------------------------------------------------------------
+Variant: phoenix-sha2-256s (simple)
+Success Rate: 100.00%
+KeyGen: 3,222,689,723 cycles
+Sign:   26,964,348,400 cycles
+Verify: 25,826,259 cycles
+Signature Size: 20932 bytes
+---------------------------------------------------------------
+Variant: phoenix-sha2-512f (simple)
+Success Rate: 100.00%
+KeyGen: 258,568,375 cycles
+Sign:   4,513,424,458 cycles
+Verify: 24,059,127 cycles
+Signature Size: 118928 bytes
+---------------------------------------------------------------
+Variant: phoenix-sha2-512s (simple)
+Success Rate: 100.00%
+KeyGen: 6,096,452,158 cycles
+Sign:   63,947,592,711 cycles
+Verify: 22,356,419 cycles
+Signature Size: 81856 bytes
+---------------------------------------------------------------
+Variant: phoenix-shake-128f (simple)
+Success Rate: 100.00%
+KeyGen: 16,347,580 cycles
+Sign:   322,888,155 cycles
+Verify: 8,322,554 cycles
+Signature Size: 11796 bytes
+---------------------------------------------------------------
+Variant: phoenix-shake-128s (simple)
+Success Rate: 100.00%
+KeyGen: 16,296,240 cycles
+Sign:   323,926,062 cycles
+Verify: 8,267,081 cycles
+Signature Size: 11796 bytes
+---------------------------------------------------------------
+Variant: phoenix-shake-192f (simple)
+Success Rate: 100.00%
+KeyGen: 41,111,494 cycles
+Sign:   615,886,502 cycles
+Verify: 8,606,826 cycles
+Signature Size: 23008 bytes
+---------------------------------------------------------------
+Variant: phoenix-shake-192s (simple)
+Success Rate: 100.00%
+KeyGen: 3,845,537,761 cycles
+Sign:   30,859,384,387 cycles
+Verify: 30,184,440 cycles
+Signature Size: 11660 bytes
+---------------------------------------------------------------
+Variant: phoenix-shake-256f (simple)
 Success Rate: 0.00%
-KeyGen: 1,654,934,028 cycles
-Sign:   25,063,078 cycles
-Verify: 453,061 cycles
-Signature Size: 4980 bytes
+KeyGen: 130,904,118 cycles
+Sign:   1,803,978,400 cycles
+Verify: 1,032,525 cycles
+Signature Size: 35152 bytes
 ---------------------------------------------------------------
-Variant: sphincs-sha2-192f (simple)
+Variant: phoenix-shake-256s (simple)
 Success Rate: 100.00%
-KeyGen: 44,964,896 cycles
-Sign:   673,412,344 cycles
-Verify: 9,417,998 cycles
-Signature Size: 22960 bytes
+KeyGen: 2,992,057,738 cycles
+Sign:   25,020,379,737 cycles
+Verify: 23,892,147 cycles
+Signature Size: 20900 bytes
 ---------------------------------------------------------------
-Variant: sphincs-sha2-192s (simple)
+Variant: phoenix-shake-512f (simple)
 Success Rate: 100.00%
-KeyGen: 4,201,414,970 cycles
-Sign:   33,739,550,527 cycles
-Verify: 33,332,954 cycles
-Signature Size: 11732 bytes
+KeyGen: 646,411,337 cycles
+Sign:   9,787,602,203 cycles
+Verify: 56,963,091 cycles
+Signature Size: 119568 bytes
 ---------------------------------------------------------------
-sphincs-sha2-256f (simple): BUILD FAILED
-Variant: sphincs-sha2-256s (simple)
+Variant: phoenix-shake-512s (simple)
 Success Rate: 100.00%
-KeyGen: 3,194,457,536 cycles
-Sign:   26,806,075,217 cycles
-Verify: 25,543,863 cycles
-Signature Size: 20740 bytes
----------------------------------------------------------------
-sphincs-sha2-512f (simple): BUILD FAILED
-sphincs-sha2-512s (simple): BUILD FAILED
-Variant: sphincs-shake-128f (simple)
-Success Rate: 100.00%
-KeyGen: 16,296,716 cycles
-Sign:    cycles
-Verify:  cycles
-Signature Size:  bytes
----------------------------------------------------------------
-Variant: sphincs-shake-128s (simple)
-Success Rate: 
-KeyGen: 2,854,254,368 cycles
-Sign:    cycles
-Verify:  cycles
-Signature Size:  bytes
----------------------------------------------------------------
-Variant: sphincs-shake-192f (simple)
-Success Rate: 100.00%
-KeyGen: 41,008,020 cycles
-Sign:   619,126,110 cycles
-Verify: 8,572,049 cycles
-Signature Size: 22960 bytes
+KeyGen: 12,755,535,186 cycles
+Sign:   119,996,117,211 cycles
+Verify: 45,011,416 cycles
+Signature Size: 81920 bytes
 ---------------------------------------------------------------

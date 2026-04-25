@@ -59,9 +59,11 @@ void merkle_sign(uint8_t *sig, unsigned char *root,
             thash_fin(digest, root, 1, ctx, pk_addr, bitmask);
             csum = chain_lengths(steps, digest);
 
-            if (csum >= WOTS_SUM_BASE && csum < (WOTS_SUM_BASE + WOTS_SUM_RANGE))
+            if (csum >= WOTS_SUM_BASE && csum <= (WOTS_SUM_BASE + WOTS_SUM_RANGE))
             {
-                steps[SPX_WOTS_LEN1] = csum - WOTS_SUM_BASE;
+                if (SPX_WOTS_LEN2 > 0) {
+                    steps[SPX_WOTS_LEN1] = (unsigned int)(csum - WOTS_SUM_BASE);
+                }
 
                 *counter_out = counter;
                 break;
@@ -112,4 +114,3 @@ void merkle_gen_root(unsigned char *root, const spx_ctx *ctx)
                 ~0 /* ~0 means "don't bother generating an auth path */,
                 &counter);
 }
-
