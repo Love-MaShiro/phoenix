@@ -8,7 +8,7 @@ MODES=("simple") # Usually "simple" is the default for these variants in recent 
 
 # Output file
 RESULT_FILE="benchmark_results.txt"
-echo "SPHINCS+ Comprehensive Benchmark Results - $(date)" > $RESULT_FILE
+echo "Phoenix Comprehensive Benchmark Results - $(date)" > $RESULT_FILE
 echo "===============================================================" >> $RESULT_FILE
 
 # Temporary build log
@@ -22,7 +22,7 @@ for hash in "${HASHES[@]}"; do
     for level in "${LEVELS[@]}"; do
         for var in "${VARIANTS[@]}"; do
             for mode in "${MODES[@]}"; do
-                PARAM="sphincs-${hash}-${level}${var}"
+                PARAM="phoenix-${hash}-${level}${var}"
                 echo "---------------------------------------------------------------"
                 echo "Processing: $PARAM ($mode)"
                 

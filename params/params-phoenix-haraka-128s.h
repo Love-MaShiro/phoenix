@@ -10,10 +10,10 @@
 /* Number of subtree layer. */
 #define SPX_D 8
 /* TFORS tree dimensions. */
-#define SPX_TFORS_A 15
-#define SPX_TFORS_K_PRIME 8
-#define SPX_TFORS_LOG_K_PRIME 3
-#define SPX_TFORS_K 8
+#define SPX_TFORS_A 13
+#define SPX_TFORS_K_PRIME 16
+#define SPX_TFORS_LOG_K_PRIME 4
+#define SPX_TFORS_K 9
 #define SPX_TFORS_HEIGHT (SPX_TFORS_LOG_K_PRIME + SPX_TFORS_A)
 #define SPX_TFORS_T (1 << SPX_TFORS_A)
 /* Winternitz parameter, */
@@ -57,7 +57,6 @@
 /* custom upgrade parameter definitions */
 #define COUNTER_SIZE 4
 
-
 /* --- WOTS+C Automatic Parameter Calculation --- */
 /* Winternitz parameter for the single checksum chain */
 #define SPX_WOTS_CHECKSUM_W 1
@@ -99,6 +98,6 @@
 #define SPX_PK_BYTES (2 * SPX_N)
 #define SPX_SK_BYTES (2 * SPX_N + SPX_PK_BYTES)
 
-#include "../sha2_offsets.h"
+#include "../haraka_offsets.h"
 
 #endif

@@ -1,4 +1,4 @@
-PARAMS = sphincs-haraka-128f
+PARAMS = phoenix-haraka-128f
 THASH = robust
 
 CC=/usr/bin/gcc
@@ -77,4 +77,3 @@ clean:
 	-$(RM) PQCgenKAT_sign
 	-$(RM) PQCsignKAT_*.rsp
 	-$(RM) PQCsignKAT_*.req
-
