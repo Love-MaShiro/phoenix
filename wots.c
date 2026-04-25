@@ -47,7 +47,6 @@ static void gen_chain(unsigned char *out, const unsigned char *in,
 /**
  * base_w algorithm as described in draft.
  * Interprets an array of bytes as integers in base w.
- * We adjust the number of chains for w1 and w2 so that they just cover SPX_N - SPX_WOTS_ZERO_LAST_BITS.
  */
 static void base_w(unsigned int *output,
                    const unsigned char *input)
@@ -122,7 +121,6 @@ void wots_pk_from_sig(unsigned char *pk,
 {
     unsigned int lengths[SPX_WOTS_LEN];
     uint32_t i;
-    uint32_t mask = (~0U << (8 - WOTS_ZERO_BITS));
     unsigned char bitmask[SPX_N];
 
     /*Initial parameters for validation of checksum*/
@@ -147,8 +145,7 @@ void wots_pk_from_sig(unsigned char *pk,
     csum = chain_lengths(lengths, digest);
    
     /*Validate Checksum*/
-    if (((digest[SPX_N - 1] & mask) != 0) ||
-        (csum < WOTS_SUM_BASE) ||
+    if ((csum < WOTS_SUM_BASE) ||
         (csum > (WOTS_SUM_BASE + WOTS_SUM_RANGE)))
     {
         /* Validation failed: invalidate the public key */
@@ -186,5 +183,3 @@ void wots_pk_from_sig(unsigned char *pk,
                   lengths[i], SPX_WOTS_CHECKSUM_W - 1 - lengths[i], ctx, addr, SPX_WOTS_CHECKSUM_W);
     }
 }
-
-

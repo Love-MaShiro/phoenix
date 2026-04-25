@@ -102,13 +102,8 @@ int SPX_h2_generate_indices(uint32_t *indices,
                         const spx_ctx *ctx)
 {
     const uint32_t k = SPX_TFORS_K;
-    const uint32_t t = SPX_TFORS_T;
-    uint32_t log2_t = 0;
-    uint32_t tmp = t - 1;
-    while (tmp > 0) {
-        log2_t++;
-        tmp >>= 1;
-    }
+    const uint32_t k_prime = SPX_TFORS_K_PRIME;
+    const uint32_t log2_kp = SPX_TFORS_LOG_K_PRIME;
 
 
     unsigned char input[SPX_N + SPX_N];
@@ -119,28 +114,28 @@ int SPX_h2_generate_indices(uint32_t *indices,
     shake256(rnd, sizeof(rnd), input, sizeof(input));
     size_t rnd_ptr = 0;
 
-    SPX_VLA(uint8_t, mask, (t + 7) / 8);
-    memset(mask, 0, (t + 7) / 8);
+    SPX_VLA(uint8_t, mask, (k_prime + 7) / 8);
+    memset(mask, 0, (k_prime + 7) / 8);
     uint32_t count = 0;
 
-    if (k <= t / 2) {
+    if (k <= k_prime / 2) {
         while (count < k) {
             if (rnd_ptr + 8 > sizeof(rnd)) return -1;
             uint64_t val = 0;
             for (int i = 0; i < 8; i++) {
                 val = (val << 8) | rnd[rnd_ptr++];
             }
-            uint32_t idx = val & ((1U << log2_t) - 1);
-            if (idx >= t) continue;
+            uint32_t idx = (uint32_t)(val & ((1U << log2_kp) - 1));
+            if (idx >= k_prime) continue;
             if (!(mask[idx / 8] & (1 << (idx % 8)))) {
                 mask[idx / 8] |= (uint8_t)(1 << (idx % 8));
                 indices[count++] = idx;
             }
         }
     } else {
-        SPX_VLA(uint8_t, reject_mask, (t + 7) / 8);
-        memset(reject_mask, 0, (t + 7) / 8);
-        uint32_t reject_need = t - k;
+        SPX_VLA(uint8_t, reject_mask, (k_prime + 7) / 8);
+        memset(reject_mask, 0, (k_prime + 7) / 8);
+        uint32_t reject_need = k_prime - k;
         count = 0;
         while (count < reject_need) {
             if (rnd_ptr + 8 > sizeof(rnd)) return -1;
@@ -148,15 +143,15 @@ int SPX_h2_generate_indices(uint32_t *indices,
             for (int i = 0; i < 8; i++) {
                 val = (val << 8) | rnd[rnd_ptr++];
             }
-            uint32_t idx = val & ((1U << log2_t) - 1);
-            if (idx >= t) continue;
+            uint32_t idx = (uint32_t)(val & ((1U << log2_kp) - 1));
+            if (idx >= k_prime) continue;
             if (!(reject_mask[idx / 8] & (1 << (idx % 8)))) {
                 reject_mask[idx / 8] |= (uint8_t)(1 << (idx % 8));
                 count++;
             }
         }
         count = 0;
-        for (uint32_t i = 0; i < t && count < k; i++) {
+        for (uint32_t i = 0; i < k_prime && count < k; i++) {
             if (!(reject_mask[i / 8] & (1 << (i % 8)))) {
                 indices[count++] = i;
             }

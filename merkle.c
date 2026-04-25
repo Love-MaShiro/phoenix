@@ -32,7 +32,6 @@ void merkle_sign(uint8_t *sig, unsigned char *root,
     uint32_t counter = 0;
     int csum;
     uint32_t to_sign = ~0;
-    uint32_t mask = (~0U << (8 - WOTS_ZERO_BITS));
 
     /*Initialize parameters for actual sign*/
     set_type(&tree_addr[0], SPX_ADDR_TYPE_HASHTREE);
@@ -58,22 +57,14 @@ void merkle_sign(uint8_t *sig, unsigned char *root,
                 return;
             ull_to_bytes(((unsigned char *)(pk_addr)) + (SPX_OFFSET_COUNTER), COUNTER_SIZE, counter);
             thash_fin(digest, root, 1, ctx, pk_addr, bitmask);
-            if (((digest[SPX_N - 1]) & mask) == 0)
+            csum = chain_lengths(steps, digest);
+
+            if (csum >= WOTS_SUM_BASE && csum < (WOTS_SUM_BASE + WOTS_SUM_RANGE))
             {
-                /* Step 2: Calculate the complementary checksum (sum of W-1-msg_i) */
-                /* chain_lengths should be the variable-width version we discussed */
-                csum = chain_lengths(steps, digest);
+                steps[SPX_WOTS_LEN1] = csum - WOTS_SUM_BASE;
 
-                /* Step 3: Check if checksum falls within the acceptable range */
-                if (csum >= WOTS_SUM_BASE && csum < (WOTS_SUM_BASE + WOTS_SUM_RANGE))
-                {
-                    /* Step 4: Calculate the value for the single checksum chain */
-                    /* This chain signs the offset from the base sum */
-                    steps[SPX_WOTS_LEN1] = csum - WOTS_SUM_BASE;
-
-                    *counter_out = counter;
-                    break;
-                }
+                *counter_out = counter;
+                break;
             }
         }
 
@@ -121,5 +112,4 @@ void merkle_gen_root(unsigned char *root, const spx_ctx *ctx)
                 ~0 /* ~0 means "don't bother generating an auth path */,
                 &counter);
 }
-
 

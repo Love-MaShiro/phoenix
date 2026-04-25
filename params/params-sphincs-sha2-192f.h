@@ -71,9 +71,6 @@
 /* custom upgrade parameter definitions */
 #define COUNTER_SIZE 4
 
-/* Search and checksum range definition */
-#define SPX_WOTS_ZERO_LAST_BITS 0
-#define WOTS_ZERO_BITS SPX_WOTS_ZERO_LAST_BITS
 
 /* --- WOTS+C Automatic Parameter Calculation --- */
 /* Winternitz parameter for the single checksum chain */

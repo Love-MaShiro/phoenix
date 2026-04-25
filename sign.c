@@ -17,6 +17,7 @@
 #include "merkle.h"
 
 #define SPX_MAX_COUNTER 1000
+#define SPX_MAX_OPTRAND_TRIES 256
 #define SPX_MAX_MLEN 1024
 
 /*
@@ -129,30 +130,43 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen, size_t *tfslen,
     set_type(wots_addr, SPX_ADDR_TYPE_WOTS);
     set_type(tree_addr, SPX_ADDR_TYPE_HASHTREE);
 
-    randombytes(optrand, SPX_N);
-
     uint8_t *sig_origin = sig; /* mark the start of the signature for later use */
     
-    /* Compute the digest randomization value. */
-    gen_message_random(sig, sk_prf, optrand, m, mlen, &ctx);
-
     memcpy(mtmp, m, mlen);
 
-    while (1) {
-        ull_to_bytes(mtmp + mlen, COUNTER_SIZE, counter);
-        hash_message(mhash, &tree, &idx_leaf, sig, pk,
-                    mtmp, mlen + COUNTER_SIZE, &ctx);
+    uint32_t optrand_tries = 0;
+    for (;;) {
+        randombytes(optrand, SPX_N);
+        gen_message_random(sig_origin, sk_prf, optrand, m, mlen, &ctx);
 
-        message_to_indices(indices, mhash, &ctx);
+        counter = 0;
+        while (1) {
+            ull_to_bytes(mtmp + mlen, COUNTER_SIZE, counter);
+            hash_message(mhash, &tree, &idx_leaf, sig_origin, pk,
+                        mtmp, mlen + COUNTER_SIZE, &ctx);
 
-        octopus_compute_auth_count(indices, SPX_TFORS_K, &tfors_auth_count);
-        tfors_siglen = SPX_TFORS_K * SPX_N + tfors_auth_count * SPX_N;
+            message_to_indices(indices, mhash, &ctx);
+
+            octopus_compute_auth_count(indices, SPX_TFORS_K, &tfors_auth_count);
+            tfors_siglen = SPX_TFORS_K * SPX_N + tfors_auth_count * SPX_N;
+
+            if (tfors_siglen <= tfors_sig_max) {
+                break;
+            }
+            counter++;
+            if (counter >= SPX_MAX_COUNTER) {
+                break;
+            }
+        }
 
         if (tfors_siglen <= tfors_sig_max) {
             break;
         }
-        counter++;
-        if (counter >= SPX_MAX_COUNTER) {
+
+        optrand_tries++;
+        if (optrand_tries >= SPX_MAX_OPTRAND_TRIES) {
+            *siglen = 0;
+            *tfslen = 0;
             return -1;
         }
     }
@@ -289,7 +303,12 @@ int crypto_sign(unsigned char *sm, unsigned long long *smlen, unsigned long long
     size_t siglen;
     size_t tfors_siglen;
 
-    crypto_sign_signature(sm, &siglen, &tfors_siglen, m, (size_t)mlen, sk);
+    if (crypto_sign_signature(sm, &siglen, &tfors_siglen, m, (size_t)mlen, sk) != 0) {
+        *smlen = 0;
+        *slen = 0;
+        *tfslen = 0;
+        return -1;
+    }
 
     memmove(sm + siglen, m, mlen);
     *smlen = siglen + mlen;

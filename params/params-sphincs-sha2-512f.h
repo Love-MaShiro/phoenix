@@ -13,8 +13,8 @@
 #define SPX_D 11
 /* TFORS tree dimensions. */
 #define SPX_TFORS_A 12
-#define SPX_TFORS_K_PRIME 32
-#define SPX_TFORS_LOG_K_PRIME 5
+#define SPX_TFORS_K_PRIME 64
+#define SPX_TFORS_LOG_K_PRIME 6
 #define SPX_TFORS_K 53
 #define SPX_TFORS_HEIGHT (SPX_TFORS_LOG_K_PRIME + SPX_TFORS_A)
 #define SPX_TFORS_T (1 << SPX_TFORS_A)
@@ -31,6 +31,7 @@
 /* For clarity */
 #define SPX_ADDR_BYTES 32
 
+/* WOTS parameters. */
 #define SPX_WOTS_W1_LEN 100
 #define SPX_WOTS_W2_LEN 2
 #define SPX_WOTS_LEN1 (SPX_WOTS_W1_LEN + SPX_WOTS_W2_LEN)
@@ -59,9 +60,7 @@
 /* custom upgrade parameter definitions */
 #define COUNTER_SIZE 4
 
-/* Search and checksum range definition */
-#define SPX_WOTS_ZERO_LAST_BITS 4
-#define WOTS_ZERO_BITS SPX_WOTS_ZERO_LAST_BITS
+
 
 /* --- WOTS+C Automatic Parameter Calculation --- */
 /* Winternitz parameter for the single checksum chain */
