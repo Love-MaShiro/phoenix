@@ -1,0 +1,1 @@
+/usr/bin/cc CMakeFiles/test_thashx4.dir/test/thashx4.c.o CMakeFiles/test_thashx4.dir/test/cycles.c.o -o test_thashx4  libspx_shake_ref.a 

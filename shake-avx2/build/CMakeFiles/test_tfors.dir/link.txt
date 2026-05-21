@@ -1,0 +1,1 @@
+/usr/bin/cc CMakeFiles/test_tfors.dir/test/tfors.c.o CMakeFiles/test_tfors.dir/test/cycles.c.o -o test_tfors  libspx_shake_ref.a 

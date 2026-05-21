@@ -1,0 +1,1 @@
+/usr/bin/cc CMakeFiles/gwots_benchmark.dir/test/gwots_benchmark.c.o CMakeFiles/gwots_benchmark.dir/test/cycles.c.o -o gwots_benchmark  libspx_shake_ref.a 

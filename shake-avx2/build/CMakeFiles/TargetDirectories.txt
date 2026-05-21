@@ -1,0 +1,16 @@
+/home/yzc/phoenix/shake-avx2/build/CMakeFiles/spx_shake_ref.dir
+/home/yzc/phoenix/shake-avx2/build/CMakeFiles/test_tfors.dir
+/home/yzc/phoenix/shake-avx2/build/CMakeFiles/test_spx.dir
+/home/yzc/phoenix/shake-avx2/build/CMakeFiles/test_octopus.dir
+/home/yzc/phoenix/shake-avx2/build/CMakeFiles/test_gwots.dir
+/home/yzc/phoenix/shake-avx2/build/CMakeFiles/test_hashx4.dir
+/home/yzc/phoenix/shake-avx2/build/CMakeFiles/test_utilsx4.dir
+/home/yzc/phoenix/shake-avx2/build/CMakeFiles/test_thashx4.dir
+/home/yzc/phoenix/shake-avx2/build/CMakeFiles/benchmark.dir
+/home/yzc/phoenix/shake-avx2/build/CMakeFiles/x4_benchmark.dir
+/home/yzc/phoenix/shake-avx2/build/CMakeFiles/tfors_benchmark.dir
+/home/yzc/phoenix/shake-avx2/build/CMakeFiles/gwots_benchmark.dir
+/home/yzc/phoenix/shake-avx2/build/CMakeFiles/PQCgenKAT_sign.dir
+/home/yzc/phoenix/shake-avx2/build/CMakeFiles/test_x4_consistency.dir
+/home/yzc/phoenix/shake-avx2/build/CMakeFiles/edit_cache.dir
+/home/yzc/phoenix/shake-avx2/build/CMakeFiles/rebuild_cache.dir

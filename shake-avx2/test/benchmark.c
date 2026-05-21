@@ -150,7 +150,7 @@ int main(void)
     message_to_indices(tfors_indices, tfors_m, &ctx);
 
     printf("===============================================================\n");
-    printf("ref End-to-End Benchmark\n");
+    printf("shake-avx2 End-to-End Benchmark\n");
     printf("Parameter set: %s\n", PARAMNAME);
     printf("Parameters: n = %d, h = %d, d = %d, a = %d, k = %d, w = %d\n",
            SPX_N, SPX_FULL_HEIGHT, SPX_D, SPX_TFORS_A, SPX_TFORS_K,

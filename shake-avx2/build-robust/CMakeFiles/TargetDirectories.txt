@@ -1,0 +1,16 @@
+/home/yzc/phoenix/shake-avx2/build-robust/CMakeFiles/spx_shake_ref.dir
+/home/yzc/phoenix/shake-avx2/build-robust/CMakeFiles/test_tfors.dir
+/home/yzc/phoenix/shake-avx2/build-robust/CMakeFiles/test_spx.dir
+/home/yzc/phoenix/shake-avx2/build-robust/CMakeFiles/test_octopus.dir
+/home/yzc/phoenix/shake-avx2/build-robust/CMakeFiles/test_gwots.dir
+/home/yzc/phoenix/shake-avx2/build-robust/CMakeFiles/test_hashx4.dir
+/home/yzc/phoenix/shake-avx2/build-robust/CMakeFiles/test_utilsx4.dir
+/home/yzc/phoenix/shake-avx2/build-robust/CMakeFiles/test_thashx4.dir
+/home/yzc/phoenix/shake-avx2/build-robust/CMakeFiles/benchmark.dir
+/home/yzc/phoenix/shake-avx2/build-robust/CMakeFiles/x4_benchmark.dir
+/home/yzc/phoenix/shake-avx2/build-robust/CMakeFiles/tfors_benchmark.dir
+/home/yzc/phoenix/shake-avx2/build-robust/CMakeFiles/gwots_benchmark.dir
+/home/yzc/phoenix/shake-avx2/build-robust/CMakeFiles/PQCgenKAT_sign.dir
+/home/yzc/phoenix/shake-avx2/build-robust/CMakeFiles/test_x4_consistency.dir
+/home/yzc/phoenix/shake-avx2/build-robust/CMakeFiles/edit_cache.dir
+/home/yzc/phoenix/shake-avx2/build-robust/CMakeFiles/rebuild_cache.dir
