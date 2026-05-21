@@ -1,0 +1,1183 @@
+/usr/bin/gcc -Wall -Wextra -Wpedantic -O3 -std=c99 -Wconversion -Wmissing-prototypes -DPARAMS=sphincs-shake-128f -DPARAMNAME=\"sphincs-shake-128f\" -I. -Itest  -o test/tfors address.c randombytes.c merkle.c wots.c wotsx1.c utils.c utilsx1.c tfors.c sign.c octopus.c counter.c fips202.c hash_shake.c thash_shake_simple.c test/tfors.c 
+merkle.c: In function ‘SPX_merkle_sign’:
+merkle.c:34:24: warning: unsigned conversion from ‘int’ to ‘uint32_t’ {aka ‘unsigned int’} changes value from ‘-1’ to ‘4294967295’ [-Wsign-conversion]
+   34 |     uint32_t to_sign = ~0;
+      |                        ^
+In file included from params.h:4,
+                 from utils.h:5,
+                 from merkle.c:4:
+params/params-sphincs-shake-128f.h:4:26: warning: conversion to ‘int’ from ‘unsigned int’ may change the sign of the result [-Wsign-conversion]
+    4 | #define SPX_NAMESPACE(s) SPX_##s
+      |                          ^~~~
+wots.h:22:23: note: in expansion of macro ‘SPX_NAMESPACE’
+   22 | #define chain_lengths SPX_NAMESPACE(chain_lengths)
+      |                       ^~~~~~~~~~~~~
+merkle.c:65:24: note: in expansion of macro ‘chain_lengths’
+   65 |                 csum = chain_lengths(steps, digest);
+      |                        ^~~~~~~~~~~~~
+merkle.c:72:44: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+   72 |                     steps[SPX_WOTS_LEN1] = csum - WOTS_SUM_BASE;
+      |                                            ^~~~
+merkle.c: In function ‘SPX_merkle_gen_root’:
+merkle.c:121:17: warning: unsigned conversion from ‘int’ to ‘uint32_t’ {aka ‘unsigned int’} changes value from ‘-1’ to ‘4294967295’ [-Wsign-conversion]
+  121 |                 ~0 /* ~0 means "don't bother generating an auth path */,
+      |                 ^~
+wots.c: In function ‘base_w’:
+wots.c:64:23: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+   64 |             output[i] ^= ((input[offset >> 3] >> (offset & 0x7)) & 0x1) << j;
+      |                       ^~
+wots.c:75:23: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+   75 |             output[i] ^= ((input[offset >> 3] >> (offset & 0x7)) & 0x1) << j;
+      |                       ^~
+In file included from params.h:4,
+                 from utils.h:5,
+                 from wots.c:4:
+wots.c: In function ‘SPX_wots_pk_from_sig’:
+params/params-sphincs-shake-128f.h:4:26: warning: conversion to ‘int’ from ‘unsigned int’ may change the sign of the result [-Wsign-conversion]
+    4 | #define SPX_NAMESPACE(s) SPX_##s
+      |                          ^~~~
+wots.h:22:23: note: in expansion of macro ‘SPX_NAMESPACE’
+   22 | #define chain_lengths SPX_NAMESPACE(chain_lengths)
+      |                       ^~~~~~~~~~~~~
+wots.c:147:12: note: in expansion of macro ‘chain_lengths’
+  147 |     csum = chain_lengths(lengths, digest);
+      |            ^~~~~~~~~~~~~
+wots.c:163:34: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+  163 |         lengths[SPX_WOTS_LEN1] = csum - WOTS_SUM_BASE;
+      |                                  ^~~~
+tfors.c: In function ‘sort_indices’:
+tfors.c:47:17: warning: conversion to ‘int’ from ‘uint32_t’ {aka ‘unsigned int’} may change the sign of the result [-Wsign-conversion]
+   47 |         int j = i - 1;
+      |                 ^
+tfors.c: In function ‘message_to_indices’:
+tfors.c:85:58: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+   85 |             indices2[i] |= ((m[byte_pos] >> bit_in_byte) & 1u) << (unsigned int)j;
+      |                                                          ^
+tfors.c: In function ‘SPX_tfors_sign’:
+tfors.c:135:69: warning: pointers to arrays with different qualifiers are incompatible in ISO C [-Wpedantic]
+  135 |     octopus_compute_auth_paths(pk, &auth, indices_tmp, SPX_TFORS_K, leaf_sk, ctx, tfors_tree_addr);
+      |                                                                     ^~~~~~~
+At top level:
+tfors.c:15:13: warning: ‘print_spx_addr’ defined but not used [-Wunused-function]
+   15 | static void print_spx_addr(const char *name, const uint32_t addr[8])
+      |             ^~~~~~~~~~~~~~
+sign.c: In function ‘crypto_sign_verify’:
+sign.c:210:14: warning: unused variable ‘indices’ [-Wunused-variable]
+  210 |     uint32_t indices[SPX_TFORS_K];
+      |              ^~~~~~~
+sign.c:196:51: warning: unused parameter ‘siglen’ [-Wunused-parameter]
+  196 | int crypto_sign_verify(const uint8_t *sig, size_t siglen, size_t tfors_siglen,
+      |                                            ~~~~~~~^~~~~~
+octopus.c: In function ‘octopus_compute_auth_paths’:
+octopus.c:259:32: warning: unused variable ‘right’ [-Wunused-variable]
+  259 |                 unsigned char *right = &current[SPX_N];
+      |                                ^~~~~
+octopus.c:240:22: warning: unused variable ‘sibling_idx’ [-Wunused-variable]
+  240 |             uint32_t sibling_idx = node_idx ^ 1;
+      |                      ^~~~~~~~~~~
+At top level:
+octopus.c:76:13: warning: ‘compute_parent_hash’ defined but not used [-Wunused-function]
+   76 | static void compute_parent_hash(unsigned char *parent_hash,
+      |             ^~~~~~~~~~~~~~~~~~~
+octopus.c:12:13: warning: ‘print_spx_addr’ defined but not used [-Wunused-function]
+   12 | static void print_spx_addr(const char *name, const uint32_t addr[8])
+      |             ^~~~~~~~~~~~~~
+In file included from params.h:4,
+                 from address.h:5,
+                 from counter.c:4:
+counter.c: In function ‘get_wots_counter’:
+params/params-sphincs-shake-128f.h:4:26: warning: conversion from ‘long long unsigned int’ to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+    4 | #define SPX_NAMESPACE(s) SPX_##s
+      |                          ^~~~
+utils.h:32:22: note: in expansion of macro ‘SPX_NAMESPACE’
+   32 | #define bytes_to_ull SPX_NAMESPACE(bytes_to_ull)
+      |                      ^~~~~~~~~~~~~
+counter.c:30:15: note: in expansion of macro ‘bytes_to_ull’
+   30 |     counter = bytes_to_ull(counter_bytes, COUNTER_SIZE);
+      |               ^~~~~~~~~~~~
+counter.c: In function ‘get_fors_counter’:
+params/params-sphincs-shake-128f.h:4:26: warning: conversion from ‘long long unsigned int’ to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+    4 | #define SPX_NAMESPACE(s) SPX_##s
+      |                          ^~~~
+utils.h:32:22: note: in expansion of macro ‘SPX_NAMESPACE’
+   32 | #define bytes_to_ull SPX_NAMESPACE(bytes_to_ull)
+      |                      ^~~~~~~~~~~~~
+counter.c:48:15: note: in expansion of macro ‘bytes_to_ull’
+   48 |     counter = bytes_to_ull(counter_bytes_out, COUNTER_SIZE);
+      |               ^~~~~~~~~~~~
+hash_shake.c: In function ‘SPX_h2_generate_indices’:
+hash_shake.c:133:28: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  133 |             uint32_t idx = val & ((1U << log2_t) - 1);
+      |                            ^~~
+hash_shake.c:151:28: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  151 |             uint32_t idx = val & ((1U << log2_t) - 1);
+      |                            ^~~
+/usr/bin/gcc -Wall -Wextra -Wpedantic -O3 -std=c99 -Wconversion -Wmissing-prototypes -DPARAMS=sphincs-shake-128f -DPARAMNAME=\"sphincs-shake-128f\" -I. -Itest  -o test/spx address.c randombytes.c merkle.c wots.c wotsx1.c utils.c utilsx1.c tfors.c sign.c octopus.c counter.c fips202.c hash_shake.c thash_shake_simple.c test/spx.c 
+merkle.c: In function ‘SPX_merkle_sign’:
+merkle.c:34:24: warning: unsigned conversion from ‘int’ to ‘uint32_t’ {aka ‘unsigned int’} changes value from ‘-1’ to ‘4294967295’ [-Wsign-conversion]
+   34 |     uint32_t to_sign = ~0;
+      |                        ^
+In file included from params.h:4,
+                 from utils.h:5,
+                 from merkle.c:4:
+params/params-sphincs-shake-128f.h:4:26: warning: conversion to ‘int’ from ‘unsigned int’ may change the sign of the result [-Wsign-conversion]
+    4 | #define SPX_NAMESPACE(s) SPX_##s
+      |                          ^~~~
+wots.h:22:23: note: in expansion of macro ‘SPX_NAMESPACE’
+   22 | #define chain_lengths SPX_NAMESPACE(chain_lengths)
+      |                       ^~~~~~~~~~~~~
+merkle.c:65:24: note: in expansion of macro ‘chain_lengths’
+   65 |                 csum = chain_lengths(steps, digest);
+      |                        ^~~~~~~~~~~~~
+merkle.c:72:44: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+   72 |                     steps[SPX_WOTS_LEN1] = csum - WOTS_SUM_BASE;
+      |                                            ^~~~
+merkle.c: In function ‘SPX_merkle_gen_root’:
+merkle.c:121:17: warning: unsigned conversion from ‘int’ to ‘uint32_t’ {aka ‘unsigned int’} changes value from ‘-1’ to ‘4294967295’ [-Wsign-conversion]
+  121 |                 ~0 /* ~0 means "don't bother generating an auth path */,
+      |                 ^~
+wots.c: In function ‘base_w’:
+wots.c:64:23: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+   64 |             output[i] ^= ((input[offset >> 3] >> (offset & 0x7)) & 0x1) << j;
+      |                       ^~
+wots.c:75:23: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+   75 |             output[i] ^= ((input[offset >> 3] >> (offset & 0x7)) & 0x1) << j;
+      |                       ^~
+In file included from params.h:4,
+                 from utils.h:5,
+                 from wots.c:4:
+wots.c: In function ‘SPX_wots_pk_from_sig’:
+params/params-sphincs-shake-128f.h:4:26: warning: conversion to ‘int’ from ‘unsigned int’ may change the sign of the result [-Wsign-conversion]
+    4 | #define SPX_NAMESPACE(s) SPX_##s
+      |                          ^~~~
+wots.h:22:23: note: in expansion of macro ‘SPX_NAMESPACE’
+   22 | #define chain_lengths SPX_NAMESPACE(chain_lengths)
+      |                       ^~~~~~~~~~~~~
+wots.c:147:12: note: in expansion of macro ‘chain_lengths’
+  147 |     csum = chain_lengths(lengths, digest);
+      |            ^~~~~~~~~~~~~
+wots.c:163:34: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+  163 |         lengths[SPX_WOTS_LEN1] = csum - WOTS_SUM_BASE;
+      |                                  ^~~~
+tfors.c: In function ‘sort_indices’:
+tfors.c:47:17: warning: conversion to ‘int’ from ‘uint32_t’ {aka ‘unsigned int’} may change the sign of the result [-Wsign-conversion]
+   47 |         int j = i - 1;
+      |                 ^
+tfors.c: In function ‘message_to_indices’:
+tfors.c:85:58: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+   85 |             indices2[i] |= ((m[byte_pos] >> bit_in_byte) & 1u) << (unsigned int)j;
+      |                                                          ^
+tfors.c: In function ‘SPX_tfors_sign’:
+tfors.c:135:69: warning: pointers to arrays with different qualifiers are incompatible in ISO C [-Wpedantic]
+  135 |     octopus_compute_auth_paths(pk, &auth, indices_tmp, SPX_TFORS_K, leaf_sk, ctx, tfors_tree_addr);
+      |                                                                     ^~~~~~~
+At top level:
+tfors.c:15:13: warning: ‘print_spx_addr’ defined but not used [-Wunused-function]
+   15 | static void print_spx_addr(const char *name, const uint32_t addr[8])
+      |             ^~~~~~~~~~~~~~
+sign.c: In function ‘crypto_sign_verify’:
+sign.c:210:14: warning: unused variable ‘indices’ [-Wunused-variable]
+  210 |     uint32_t indices[SPX_TFORS_K];
+      |              ^~~~~~~
+sign.c:196:51: warning: unused parameter ‘siglen’ [-Wunused-parameter]
+  196 | int crypto_sign_verify(const uint8_t *sig, size_t siglen, size_t tfors_siglen,
+      |                                            ~~~~~~~^~~~~~
+octopus.c: In function ‘octopus_compute_auth_paths’:
+octopus.c:259:32: warning: unused variable ‘right’ [-Wunused-variable]
+  259 |                 unsigned char *right = &current[SPX_N];
+      |                                ^~~~~
+octopus.c:240:22: warning: unused variable ‘sibling_idx’ [-Wunused-variable]
+  240 |             uint32_t sibling_idx = node_idx ^ 1;
+      |                      ^~~~~~~~~~~
+At top level:
+octopus.c:76:13: warning: ‘compute_parent_hash’ defined but not used [-Wunused-function]
+   76 | static void compute_parent_hash(unsigned char *parent_hash,
+      |             ^~~~~~~~~~~~~~~~~~~
+octopus.c:12:13: warning: ‘print_spx_addr’ defined but not used [-Wunused-function]
+   12 | static void print_spx_addr(const char *name, const uint32_t addr[8])
+      |             ^~~~~~~~~~~~~~
+In file included from params.h:4,
+                 from address.h:5,
+                 from counter.c:4:
+counter.c: In function ‘get_wots_counter’:
+params/params-sphincs-shake-128f.h:4:26: warning: conversion from ‘long long unsigned int’ to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+    4 | #define SPX_NAMESPACE(s) SPX_##s
+      |                          ^~~~
+utils.h:32:22: note: in expansion of macro ‘SPX_NAMESPACE’
+   32 | #define bytes_to_ull SPX_NAMESPACE(bytes_to_ull)
+      |                      ^~~~~~~~~~~~~
+counter.c:30:15: note: in expansion of macro ‘bytes_to_ull’
+   30 |     counter = bytes_to_ull(counter_bytes, COUNTER_SIZE);
+      |               ^~~~~~~~~~~~
+counter.c: In function ‘get_fors_counter’:
+params/params-sphincs-shake-128f.h:4:26: warning: conversion from ‘long long unsigned int’ to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+    4 | #define SPX_NAMESPACE(s) SPX_##s
+      |                          ^~~~
+utils.h:32:22: note: in expansion of macro ‘SPX_NAMESPACE’
+   32 | #define bytes_to_ull SPX_NAMESPACE(bytes_to_ull)
+      |                      ^~~~~~~~~~~~~
+counter.c:48:15: note: in expansion of macro ‘bytes_to_ull’
+   48 |     counter = bytes_to_ull(counter_bytes_out, COUNTER_SIZE);
+      |               ^~~~~~~~~~~~
+hash_shake.c: In function ‘SPX_h2_generate_indices’:
+hash_shake.c:133:28: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  133 |             uint32_t idx = val & ((1U << log2_t) - 1);
+      |                            ^~~
+hash_shake.c:151:28: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  151 |             uint32_t idx = val & ((1U << log2_t) - 1);
+      |                            ^~~
+/usr/bin/gcc -Wall -Wextra -Wpedantic -O3 -std=c99 -Wconversion -Wmissing-prototypes -DPARAMS=sphincs-shake-128f -DPARAMNAME=\"sphincs-shake-128f\" -I. -Itest  -o test/octopus address.c randombytes.c merkle.c wots.c wotsx1.c utils.c utilsx1.c tfors.c sign.c octopus.c counter.c fips202.c hash_shake.c thash_shake_simple.c test/octopus.c 
+merkle.c: In function ‘SPX_merkle_sign’:
+merkle.c:34:24: warning: unsigned conversion from ‘int’ to ‘uint32_t’ {aka ‘unsigned int’} changes value from ‘-1’ to ‘4294967295’ [-Wsign-conversion]
+   34 |     uint32_t to_sign = ~0;
+      |                        ^
+In file included from params.h:4,
+                 from utils.h:5,
+                 from merkle.c:4:
+params/params-sphincs-shake-128f.h:4:26: warning: conversion to ‘int’ from ‘unsigned int’ may change the sign of the result [-Wsign-conversion]
+    4 | #define SPX_NAMESPACE(s) SPX_##s
+      |                          ^~~~
+wots.h:22:23: note: in expansion of macro ‘SPX_NAMESPACE’
+   22 | #define chain_lengths SPX_NAMESPACE(chain_lengths)
+      |                       ^~~~~~~~~~~~~
+merkle.c:65:24: note: in expansion of macro ‘chain_lengths’
+   65 |                 csum = chain_lengths(steps, digest);
+      |                        ^~~~~~~~~~~~~
+merkle.c:72:44: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+   72 |                     steps[SPX_WOTS_LEN1] = csum - WOTS_SUM_BASE;
+      |                                            ^~~~
+merkle.c: In function ‘SPX_merkle_gen_root’:
+merkle.c:121:17: warning: unsigned conversion from ‘int’ to ‘uint32_t’ {aka ‘unsigned int’} changes value from ‘-1’ to ‘4294967295’ [-Wsign-conversion]
+  121 |                 ~0 /* ~0 means "don't bother generating an auth path */,
+      |                 ^~
+wots.c: In function ‘base_w’:
+wots.c:64:23: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+   64 |             output[i] ^= ((input[offset >> 3] >> (offset & 0x7)) & 0x1) << j;
+      |                       ^~
+wots.c:75:23: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+   75 |             output[i] ^= ((input[offset >> 3] >> (offset & 0x7)) & 0x1) << j;
+      |                       ^~
+In file included from params.h:4,
+                 from utils.h:5,
+                 from wots.c:4:
+wots.c: In function ‘SPX_wots_pk_from_sig’:
+params/params-sphincs-shake-128f.h:4:26: warning: conversion to ‘int’ from ‘unsigned int’ may change the sign of the result [-Wsign-conversion]
+    4 | #define SPX_NAMESPACE(s) SPX_##s
+      |                          ^~~~
+wots.h:22:23: note: in expansion of macro ‘SPX_NAMESPACE’
+   22 | #define chain_lengths SPX_NAMESPACE(chain_lengths)
+      |                       ^~~~~~~~~~~~~
+wots.c:147:12: note: in expansion of macro ‘chain_lengths’
+  147 |     csum = chain_lengths(lengths, digest);
+      |            ^~~~~~~~~~~~~
+wots.c:163:34: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+  163 |         lengths[SPX_WOTS_LEN1] = csum - WOTS_SUM_BASE;
+      |                                  ^~~~
+tfors.c: In function ‘sort_indices’:
+tfors.c:47:17: warning: conversion to ‘int’ from ‘uint32_t’ {aka ‘unsigned int’} may change the sign of the result [-Wsign-conversion]
+   47 |         int j = i - 1;
+      |                 ^
+tfors.c: In function ‘message_to_indices’:
+tfors.c:85:58: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+   85 |             indices2[i] |= ((m[byte_pos] >> bit_in_byte) & 1u) << (unsigned int)j;
+      |                                                          ^
+tfors.c: In function ‘SPX_tfors_sign’:
+tfors.c:135:69: warning: pointers to arrays with different qualifiers are incompatible in ISO C [-Wpedantic]
+  135 |     octopus_compute_auth_paths(pk, &auth, indices_tmp, SPX_TFORS_K, leaf_sk, ctx, tfors_tree_addr);
+      |                                                                     ^~~~~~~
+At top level:
+tfors.c:15:13: warning: ‘print_spx_addr’ defined but not used [-Wunused-function]
+   15 | static void print_spx_addr(const char *name, const uint32_t addr[8])
+      |             ^~~~~~~~~~~~~~
+sign.c: In function ‘crypto_sign_verify’:
+sign.c:210:14: warning: unused variable ‘indices’ [-Wunused-variable]
+  210 |     uint32_t indices[SPX_TFORS_K];
+      |              ^~~~~~~
+sign.c:196:51: warning: unused parameter ‘siglen’ [-Wunused-parameter]
+  196 | int crypto_sign_verify(const uint8_t *sig, size_t siglen, size_t tfors_siglen,
+      |                                            ~~~~~~~^~~~~~
+octopus.c: In function ‘octopus_compute_auth_paths’:
+octopus.c:259:32: warning: unused variable ‘right’ [-Wunused-variable]
+  259 |                 unsigned char *right = &current[SPX_N];
+      |                                ^~~~~
+octopus.c:240:22: warning: unused variable ‘sibling_idx’ [-Wunused-variable]
+  240 |             uint32_t sibling_idx = node_idx ^ 1;
+      |                      ^~~~~~~~~~~
+At top level:
+octopus.c:76:13: warning: ‘compute_parent_hash’ defined but not used [-Wunused-function]
+   76 | static void compute_parent_hash(unsigned char *parent_hash,
+      |             ^~~~~~~~~~~~~~~~~~~
+octopus.c:12:13: warning: ‘print_spx_addr’ defined but not used [-Wunused-function]
+   12 | static void print_spx_addr(const char *name, const uint32_t addr[8])
+      |             ^~~~~~~~~~~~~~
+In file included from params.h:4,
+                 from address.h:5,
+                 from counter.c:4:
+counter.c: In function ‘get_wots_counter’:
+params/params-sphincs-shake-128f.h:4:26: warning: conversion from ‘long long unsigned int’ to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+    4 | #define SPX_NAMESPACE(s) SPX_##s
+      |                          ^~~~
+utils.h:32:22: note: in expansion of macro ‘SPX_NAMESPACE’
+   32 | #define bytes_to_ull SPX_NAMESPACE(bytes_to_ull)
+      |                      ^~~~~~~~~~~~~
+counter.c:30:15: note: in expansion of macro ‘bytes_to_ull’
+   30 |     counter = bytes_to_ull(counter_bytes, COUNTER_SIZE);
+      |               ^~~~~~~~~~~~
+counter.c: In function ‘get_fors_counter’:
+params/params-sphincs-shake-128f.h:4:26: warning: conversion from ‘long long unsigned int’ to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+    4 | #define SPX_NAMESPACE(s) SPX_##s
+      |                          ^~~~
+utils.h:32:22: note: in expansion of macro ‘SPX_NAMESPACE’
+   32 | #define bytes_to_ull SPX_NAMESPACE(bytes_to_ull)
+      |                      ^~~~~~~~~~~~~
+counter.c:48:15: note: in expansion of macro ‘bytes_to_ull’
+   48 |     counter = bytes_to_ull(counter_bytes_out, COUNTER_SIZE);
+      |               ^~~~~~~~~~~~
+hash_shake.c: In function ‘SPX_h2_generate_indices’:
+hash_shake.c:133:28: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  133 |             uint32_t idx = val & ((1U << log2_t) - 1);
+      |                            ^~~
+hash_shake.c:151:28: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  151 |             uint32_t idx = val & ((1U << log2_t) - 1);
+      |                            ^~~
+/usr/bin/gcc -Wall -Wextra -Wpedantic -O3 -std=c99 -Wconversion -Wmissing-prototypes -DPARAMS=sphincs-shake-128f -DPARAMNAME=\"sphincs-shake-128f\" -I. -Itest  -o test/gwots address.c randombytes.c merkle.c wots.c wotsx1.c utils.c utilsx1.c tfors.c sign.c octopus.c counter.c fips202.c hash_shake.c thash_shake_simple.c test/gwots.c 
+merkle.c: In function ‘SPX_merkle_sign’:
+merkle.c:34:24: warning: unsigned conversion from ‘int’ to ‘uint32_t’ {aka ‘unsigned int’} changes value from ‘-1’ to ‘4294967295’ [-Wsign-conversion]
+   34 |     uint32_t to_sign = ~0;
+      |                        ^
+In file included from params.h:4,
+                 from utils.h:5,
+                 from merkle.c:4:
+params/params-sphincs-shake-128f.h:4:26: warning: conversion to ‘int’ from ‘unsigned int’ may change the sign of the result [-Wsign-conversion]
+    4 | #define SPX_NAMESPACE(s) SPX_##s
+      |                          ^~~~
+wots.h:22:23: note: in expansion of macro ‘SPX_NAMESPACE’
+   22 | #define chain_lengths SPX_NAMESPACE(chain_lengths)
+      |                       ^~~~~~~~~~~~~
+merkle.c:65:24: note: in expansion of macro ‘chain_lengths’
+   65 |                 csum = chain_lengths(steps, digest);
+      |                        ^~~~~~~~~~~~~
+merkle.c:72:44: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+   72 |                     steps[SPX_WOTS_LEN1] = csum - WOTS_SUM_BASE;
+      |                                            ^~~~
+merkle.c: In function ‘SPX_merkle_gen_root’:
+merkle.c:121:17: warning: unsigned conversion from ‘int’ to ‘uint32_t’ {aka ‘unsigned int’} changes value from ‘-1’ to ‘4294967295’ [-Wsign-conversion]
+  121 |                 ~0 /* ~0 means "don't bother generating an auth path */,
+      |                 ^~
+wots.c: In function ‘base_w’:
+wots.c:64:23: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+   64 |             output[i] ^= ((input[offset >> 3] >> (offset & 0x7)) & 0x1) << j;
+      |                       ^~
+wots.c:75:23: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+   75 |             output[i] ^= ((input[offset >> 3] >> (offset & 0x7)) & 0x1) << j;
+      |                       ^~
+In file included from params.h:4,
+                 from utils.h:5,
+                 from wots.c:4:
+wots.c: In function ‘SPX_wots_pk_from_sig’:
+params/params-sphincs-shake-128f.h:4:26: warning: conversion to ‘int’ from ‘unsigned int’ may change the sign of the result [-Wsign-conversion]
+    4 | #define SPX_NAMESPACE(s) SPX_##s
+      |                          ^~~~
+wots.h:22:23: note: in expansion of macro ‘SPX_NAMESPACE’
+   22 | #define chain_lengths SPX_NAMESPACE(chain_lengths)
+      |                       ^~~~~~~~~~~~~
+wots.c:147:12: note: in expansion of macro ‘chain_lengths’
+  147 |     csum = chain_lengths(lengths, digest);
+      |            ^~~~~~~~~~~~~
+wots.c:163:34: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+  163 |         lengths[SPX_WOTS_LEN1] = csum - WOTS_SUM_BASE;
+      |                                  ^~~~
+tfors.c: In function ‘sort_indices’:
+tfors.c:47:17: warning: conversion to ‘int’ from ‘uint32_t’ {aka ‘unsigned int’} may change the sign of the result [-Wsign-conversion]
+   47 |         int j = i - 1;
+      |                 ^
+tfors.c: In function ‘message_to_indices’:
+tfors.c:85:58: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+   85 |             indices2[i] |= ((m[byte_pos] >> bit_in_byte) & 1u) << (unsigned int)j;
+      |                                                          ^
+tfors.c: In function ‘SPX_tfors_sign’:
+tfors.c:135:69: warning: pointers to arrays with different qualifiers are incompatible in ISO C [-Wpedantic]
+  135 |     octopus_compute_auth_paths(pk, &auth, indices_tmp, SPX_TFORS_K, leaf_sk, ctx, tfors_tree_addr);
+      |                                                                     ^~~~~~~
+At top level:
+tfors.c:15:13: warning: ‘print_spx_addr’ defined but not used [-Wunused-function]
+   15 | static void print_spx_addr(const char *name, const uint32_t addr[8])
+      |             ^~~~~~~~~~~~~~
+sign.c: In function ‘crypto_sign_verify’:
+sign.c:210:14: warning: unused variable ‘indices’ [-Wunused-variable]
+  210 |     uint32_t indices[SPX_TFORS_K];
+      |              ^~~~~~~
+sign.c:196:51: warning: unused parameter ‘siglen’ [-Wunused-parameter]
+  196 | int crypto_sign_verify(const uint8_t *sig, size_t siglen, size_t tfors_siglen,
+      |                                            ~~~~~~~^~~~~~
+octopus.c: In function ‘octopus_compute_auth_paths’:
+octopus.c:259:32: warning: unused variable ‘right’ [-Wunused-variable]
+  259 |                 unsigned char *right = &current[SPX_N];
+      |                                ^~~~~
+octopus.c:240:22: warning: unused variable ‘sibling_idx’ [-Wunused-variable]
+  240 |             uint32_t sibling_idx = node_idx ^ 1;
+      |                      ^~~~~~~~~~~
+At top level:
+octopus.c:76:13: warning: ‘compute_parent_hash’ defined but not used [-Wunused-function]
+   76 | static void compute_parent_hash(unsigned char *parent_hash,
+      |             ^~~~~~~~~~~~~~~~~~~
+octopus.c:12:13: warning: ‘print_spx_addr’ defined but not used [-Wunused-function]
+   12 | static void print_spx_addr(const char *name, const uint32_t addr[8])
+      |             ^~~~~~~~~~~~~~
+In file included from params.h:4,
+                 from address.h:5,
+                 from counter.c:4:
+counter.c: In function ‘get_wots_counter’:
+params/params-sphincs-shake-128f.h:4:26: warning: conversion from ‘long long unsigned int’ to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+    4 | #define SPX_NAMESPACE(s) SPX_##s
+      |                          ^~~~
+utils.h:32:22: note: in expansion of macro ‘SPX_NAMESPACE’
+   32 | #define bytes_to_ull SPX_NAMESPACE(bytes_to_ull)
+      |                      ^~~~~~~~~~~~~
+counter.c:30:15: note: in expansion of macro ‘bytes_to_ull’
+   30 |     counter = bytes_to_ull(counter_bytes, COUNTER_SIZE);
+      |               ^~~~~~~~~~~~
+counter.c: In function ‘get_fors_counter’:
+params/params-sphincs-shake-128f.h:4:26: warning: conversion from ‘long long unsigned int’ to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+    4 | #define SPX_NAMESPACE(s) SPX_##s
+      |                          ^~~~
+utils.h:32:22: note: in expansion of macro ‘SPX_NAMESPACE’
+   32 | #define bytes_to_ull SPX_NAMESPACE(bytes_to_ull)
+      |                      ^~~~~~~~~~~~~
+counter.c:48:15: note: in expansion of macro ‘bytes_to_ull’
+   48 |     counter = bytes_to_ull(counter_bytes_out, COUNTER_SIZE);
+      |               ^~~~~~~~~~~~
+hash_shake.c: In function ‘SPX_h2_generate_indices’:
+hash_shake.c:133:28: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  133 |             uint32_t idx = val & ((1U << log2_t) - 1);
+      |                            ^~~
+hash_shake.c:151:28: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  151 |             uint32_t idx = val & ((1U << log2_t) - 1);
+      |                            ^~~
+/usr/bin/gcc -Wall -Wextra -Wpedantic -O3 -std=c99 -Wconversion -Wmissing-prototypes -DPARAMS=sphincs-shake-128f -DPARAMNAME=\"sphincs-shake-128f\" -I. -Itest  -o test/haraka address.c randombytes.c merkle.c wots.c wotsx1.c utils.c utilsx1.c tfors.c sign.c octopus.c counter.c fips202.c hash_shake.c thash_shake_simple.c test/haraka.c 
+merkle.c: In function ‘SPX_merkle_sign’:
+merkle.c:34:24: warning: unsigned conversion from ‘int’ to ‘uint32_t’ {aka ‘unsigned int’} changes value from ‘-1’ to ‘4294967295’ [-Wsign-conversion]
+   34 |     uint32_t to_sign = ~0;
+      |                        ^
+In file included from params.h:4,
+                 from utils.h:5,
+                 from merkle.c:4:
+params/params-sphincs-shake-128f.h:4:26: warning: conversion to ‘int’ from ‘unsigned int’ may change the sign of the result [-Wsign-conversion]
+    4 | #define SPX_NAMESPACE(s) SPX_##s
+      |                          ^~~~
+wots.h:22:23: note: in expansion of macro ‘SPX_NAMESPACE’
+   22 | #define chain_lengths SPX_NAMESPACE(chain_lengths)
+      |                       ^~~~~~~~~~~~~
+merkle.c:65:24: note: in expansion of macro ‘chain_lengths’
+   65 |                 csum = chain_lengths(steps, digest);
+      |                        ^~~~~~~~~~~~~
+merkle.c:72:44: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+   72 |                     steps[SPX_WOTS_LEN1] = csum - WOTS_SUM_BASE;
+      |                                            ^~~~
+merkle.c: In function ‘SPX_merkle_gen_root’:
+merkle.c:121:17: warning: unsigned conversion from ‘int’ to ‘uint32_t’ {aka ‘unsigned int’} changes value from ‘-1’ to ‘4294967295’ [-Wsign-conversion]
+  121 |                 ~0 /* ~0 means "don't bother generating an auth path */,
+      |                 ^~
+wots.c: In function ‘base_w’:
+wots.c:64:23: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+   64 |             output[i] ^= ((input[offset >> 3] >> (offset & 0x7)) & 0x1) << j;
+      |                       ^~
+wots.c:75:23: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+   75 |             output[i] ^= ((input[offset >> 3] >> (offset & 0x7)) & 0x1) << j;
+      |                       ^~
+In file included from params.h:4,
+                 from utils.h:5,
+                 from wots.c:4:
+wots.c: In function ‘SPX_wots_pk_from_sig’:
+params/params-sphincs-shake-128f.h:4:26: warning: conversion to ‘int’ from ‘unsigned int’ may change the sign of the result [-Wsign-conversion]
+    4 | #define SPX_NAMESPACE(s) SPX_##s
+      |                          ^~~~
+wots.h:22:23: note: in expansion of macro ‘SPX_NAMESPACE’
+   22 | #define chain_lengths SPX_NAMESPACE(chain_lengths)
+      |                       ^~~~~~~~~~~~~
+wots.c:147:12: note: in expansion of macro ‘chain_lengths’
+  147 |     csum = chain_lengths(lengths, digest);
+      |            ^~~~~~~~~~~~~
+wots.c:163:34: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+  163 |         lengths[SPX_WOTS_LEN1] = csum - WOTS_SUM_BASE;
+      |                                  ^~~~
+tfors.c: In function ‘sort_indices’:
+tfors.c:47:17: warning: conversion to ‘int’ from ‘uint32_t’ {aka ‘unsigned int’} may change the sign of the result [-Wsign-conversion]
+   47 |         int j = i - 1;
+      |                 ^
+tfors.c: In function ‘message_to_indices’:
+tfors.c:85:58: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+   85 |             indices2[i] |= ((m[byte_pos] >> bit_in_byte) & 1u) << (unsigned int)j;
+      |                                                          ^
+tfors.c: In function ‘SPX_tfors_sign’:
+tfors.c:135:69: warning: pointers to arrays with different qualifiers are incompatible in ISO C [-Wpedantic]
+  135 |     octopus_compute_auth_paths(pk, &auth, indices_tmp, SPX_TFORS_K, leaf_sk, ctx, tfors_tree_addr);
+      |                                                                     ^~~~~~~
+At top level:
+tfors.c:15:13: warning: ‘print_spx_addr’ defined but not used [-Wunused-function]
+   15 | static void print_spx_addr(const char *name, const uint32_t addr[8])
+      |             ^~~~~~~~~~~~~~
+sign.c: In function ‘crypto_sign_verify’:
+sign.c:210:14: warning: unused variable ‘indices’ [-Wunused-variable]
+  210 |     uint32_t indices[SPX_TFORS_K];
+      |              ^~~~~~~
+sign.c:196:51: warning: unused parameter ‘siglen’ [-Wunused-parameter]
+  196 | int crypto_sign_verify(const uint8_t *sig, size_t siglen, size_t tfors_siglen,
+      |                                            ~~~~~~~^~~~~~
+octopus.c: In function ‘octopus_compute_auth_paths’:
+octopus.c:259:32: warning: unused variable ‘right’ [-Wunused-variable]
+  259 |                 unsigned char *right = &current[SPX_N];
+      |                                ^~~~~
+octopus.c:240:22: warning: unused variable ‘sibling_idx’ [-Wunused-variable]
+  240 |             uint32_t sibling_idx = node_idx ^ 1;
+      |                      ^~~~~~~~~~~
+At top level:
+octopus.c:76:13: warning: ‘compute_parent_hash’ defined but not used [-Wunused-function]
+   76 | static void compute_parent_hash(unsigned char *parent_hash,
+      |             ^~~~~~~~~~~~~~~~~~~
+octopus.c:12:13: warning: ‘print_spx_addr’ defined but not used [-Wunused-function]
+   12 | static void print_spx_addr(const char *name, const uint32_t addr[8])
+      |             ^~~~~~~~~~~~~~
+In file included from params.h:4,
+                 from address.h:5,
+                 from counter.c:4:
+counter.c: In function ‘get_wots_counter’:
+params/params-sphincs-shake-128f.h:4:26: warning: conversion from ‘long long unsigned int’ to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+    4 | #define SPX_NAMESPACE(s) SPX_##s
+      |                          ^~~~
+utils.h:32:22: note: in expansion of macro ‘SPX_NAMESPACE’
+   32 | #define bytes_to_ull SPX_NAMESPACE(bytes_to_ull)
+      |                      ^~~~~~~~~~~~~
+counter.c:30:15: note: in expansion of macro ‘bytes_to_ull’
+   30 |     counter = bytes_to_ull(counter_bytes, COUNTER_SIZE);
+      |               ^~~~~~~~~~~~
+counter.c: In function ‘get_fors_counter’:
+params/params-sphincs-shake-128f.h:4:26: warning: conversion from ‘long long unsigned int’ to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+    4 | #define SPX_NAMESPACE(s) SPX_##s
+      |                          ^~~~
+utils.h:32:22: note: in expansion of macro ‘SPX_NAMESPACE’
+   32 | #define bytes_to_ull SPX_NAMESPACE(bytes_to_ull)
+      |                      ^~~~~~~~~~~~~
+counter.c:48:15: note: in expansion of macro ‘bytes_to_ull’
+   48 |     counter = bytes_to_ull(counter_bytes_out, COUNTER_SIZE);
+      |               ^~~~~~~~~~~~
+hash_shake.c: In function ‘SPX_h2_generate_indices’:
+hash_shake.c:133:28: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  133 |             uint32_t idx = val & ((1U << log2_t) - 1);
+      |                            ^~~
+hash_shake.c:151:28: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  151 |             uint32_t idx = val & ((1U << log2_t) - 1);
+      |                            ^~~
+In file included from test/haraka.c:6:
+test/../haraka.c: In function ‘SPX_haraka_S_inc_absorb’:
+test/../haraka.c:791:18: warning: conversion from ‘int’ to ‘uint8_t’ {aka ‘unsigned char’} may change value [-Wconversion]
+  791 |     s_inc[64] += (uint8_t)mlen;
+      |                  ^
+test/../haraka.c: In function ‘SPX_haraka_S_inc_squeeze’:
+test/../haraka.c:812:59: warning: conversion to ‘size_t’ {aka ‘long unsigned int’} from ‘int’ may change the sign of the result [-Wsign-conversion]
+  812 |         out[i] = (uint8_t)s_inc[(HARAKAS_RATE - s_inc[64] + i)];
+      |                                                           ^
+test/../haraka.c:816:18: warning: conversion from ‘int’ to ‘uint8_t’ {aka ‘unsigned char’} may change value [-Wconversion]
+  816 |     s_inc[64] -= (uint8_t)i;
+      |                  ^
+test/haraka.c: In function ‘test_haraka_S_incremental’:
+test/haraka.c:34:61: warning: conversion to ‘size_t’ {aka ‘long unsigned int’} from ‘int’ may change the sign of the result [-Wsign-conversion]
+   34 |         haraka_S_inc_absorb(s_inc_absorb, input + absorbed, i, &ctx);
+      |                                                             ^
+test/haraka.c:37:61: warning: conversion to ‘size_t’ {aka ‘long unsigned int’} from ‘int’ may change the sign of the result [-Wsign-conversion]
+   37 |     haraka_S_inc_absorb(s_inc_absorb, input + absorbed, 521 - absorbed, &ctx);
+      |                                                         ~~~~^~~~~~~~~~
+/usr/bin/gcc -Wall -Wextra -Wpedantic -O3 -std=c99 -Wconversion -Wmissing-prototypes -DPARAMS=sphincs-shake-128f -DPARAMNAME=\"sphincs-shake-128f\" -I. -Itest  -o test/benchmark test/cycles.c address.c randombytes.c merkle.c wots.c wotsx1.c utils.c utilsx1.c tfors.c sign.c octopus.c counter.c fips202.c hash_shake.c thash_shake_simple.c test/benchmark.c 
+merkle.c: In function ‘SPX_merkle_sign’:
+merkle.c:34:24: warning: unsigned conversion from ‘int’ to ‘uint32_t’ {aka ‘unsigned int’} changes value from ‘-1’ to ‘4294967295’ [-Wsign-conversion]
+   34 |     uint32_t to_sign = ~0;
+      |                        ^
+In file included from params.h:4,
+                 from utils.h:5,
+                 from merkle.c:4:
+params/params-sphincs-shake-128f.h:4:26: warning: conversion to ‘int’ from ‘unsigned int’ may change the sign of the result [-Wsign-conversion]
+    4 | #define SPX_NAMESPACE(s) SPX_##s
+      |                          ^~~~
+wots.h:22:23: note: in expansion of macro ‘SPX_NAMESPACE’
+   22 | #define chain_lengths SPX_NAMESPACE(chain_lengths)
+      |                       ^~~~~~~~~~~~~
+merkle.c:65:24: note: in expansion of macro ‘chain_lengths’
+   65 |                 csum = chain_lengths(steps, digest);
+      |                        ^~~~~~~~~~~~~
+merkle.c:72:44: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+   72 |                     steps[SPX_WOTS_LEN1] = csum - WOTS_SUM_BASE;
+      |                                            ^~~~
+merkle.c: In function ‘SPX_merkle_gen_root’:
+merkle.c:121:17: warning: unsigned conversion from ‘int’ to ‘uint32_t’ {aka ‘unsigned int’} changes value from ‘-1’ to ‘4294967295’ [-Wsign-conversion]
+  121 |                 ~0 /* ~0 means "don't bother generating an auth path */,
+      |                 ^~
+wots.c: In function ‘base_w’:
+wots.c:64:23: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+   64 |             output[i] ^= ((input[offset >> 3] >> (offset & 0x7)) & 0x1) << j;
+      |                       ^~
+wots.c:75:23: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+   75 |             output[i] ^= ((input[offset >> 3] >> (offset & 0x7)) & 0x1) << j;
+      |                       ^~
+In file included from params.h:4,
+                 from utils.h:5,
+                 from wots.c:4:
+wots.c: In function ‘SPX_wots_pk_from_sig’:
+params/params-sphincs-shake-128f.h:4:26: warning: conversion to ‘int’ from ‘unsigned int’ may change the sign of the result [-Wsign-conversion]
+    4 | #define SPX_NAMESPACE(s) SPX_##s
+      |                          ^~~~
+wots.h:22:23: note: in expansion of macro ‘SPX_NAMESPACE’
+   22 | #define chain_lengths SPX_NAMESPACE(chain_lengths)
+      |                       ^~~~~~~~~~~~~
+wots.c:147:12: note: in expansion of macro ‘chain_lengths’
+  147 |     csum = chain_lengths(lengths, digest);
+      |            ^~~~~~~~~~~~~
+wots.c:163:34: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+  163 |         lengths[SPX_WOTS_LEN1] = csum - WOTS_SUM_BASE;
+      |                                  ^~~~
+tfors.c: In function ‘sort_indices’:
+tfors.c:47:17: warning: conversion to ‘int’ from ‘uint32_t’ {aka ‘unsigned int’} may change the sign of the result [-Wsign-conversion]
+   47 |         int j = i - 1;
+      |                 ^
+tfors.c: In function ‘message_to_indices’:
+tfors.c:85:58: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+   85 |             indices2[i] |= ((m[byte_pos] >> bit_in_byte) & 1u) << (unsigned int)j;
+      |                                                          ^
+tfors.c: In function ‘SPX_tfors_sign’:
+tfors.c:135:69: warning: pointers to arrays with different qualifiers are incompatible in ISO C [-Wpedantic]
+  135 |     octopus_compute_auth_paths(pk, &auth, indices_tmp, SPX_TFORS_K, leaf_sk, ctx, tfors_tree_addr);
+      |                                                                     ^~~~~~~
+At top level:
+tfors.c:15:13: warning: ‘print_spx_addr’ defined but not used [-Wunused-function]
+   15 | static void print_spx_addr(const char *name, const uint32_t addr[8])
+      |             ^~~~~~~~~~~~~~
+sign.c: In function ‘crypto_sign_verify’:
+sign.c:210:14: warning: unused variable ‘indices’ [-Wunused-variable]
+  210 |     uint32_t indices[SPX_TFORS_K];
+      |              ^~~~~~~
+sign.c:196:51: warning: unused parameter ‘siglen’ [-Wunused-parameter]
+  196 | int crypto_sign_verify(const uint8_t *sig, size_t siglen, size_t tfors_siglen,
+      |                                            ~~~~~~~^~~~~~
+octopus.c: In function ‘octopus_compute_auth_paths’:
+octopus.c:259:32: warning: unused variable ‘right’ [-Wunused-variable]
+  259 |                 unsigned char *right = &current[SPX_N];
+      |                                ^~~~~
+octopus.c:240:22: warning: unused variable ‘sibling_idx’ [-Wunused-variable]
+  240 |             uint32_t sibling_idx = node_idx ^ 1;
+      |                      ^~~~~~~~~~~
+At top level:
+octopus.c:76:13: warning: ‘compute_parent_hash’ defined but not used [-Wunused-function]
+   76 | static void compute_parent_hash(unsigned char *parent_hash,
+      |             ^~~~~~~~~~~~~~~~~~~
+octopus.c:12:13: warning: ‘print_spx_addr’ defined but not used [-Wunused-function]
+   12 | static void print_spx_addr(const char *name, const uint32_t addr[8])
+      |             ^~~~~~~~~~~~~~
+In file included from params.h:4,
+                 from address.h:5,
+                 from counter.c:4:
+counter.c: In function ‘get_wots_counter’:
+params/params-sphincs-shake-128f.h:4:26: warning: conversion from ‘long long unsigned int’ to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+    4 | #define SPX_NAMESPACE(s) SPX_##s
+      |                          ^~~~
+utils.h:32:22: note: in expansion of macro ‘SPX_NAMESPACE’
+   32 | #define bytes_to_ull SPX_NAMESPACE(bytes_to_ull)
+      |                      ^~~~~~~~~~~~~
+counter.c:30:15: note: in expansion of macro ‘bytes_to_ull’
+   30 |     counter = bytes_to_ull(counter_bytes, COUNTER_SIZE);
+      |               ^~~~~~~~~~~~
+counter.c: In function ‘get_fors_counter’:
+params/params-sphincs-shake-128f.h:4:26: warning: conversion from ‘long long unsigned int’ to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+    4 | #define SPX_NAMESPACE(s) SPX_##s
+      |                          ^~~~
+utils.h:32:22: note: in expansion of macro ‘SPX_NAMESPACE’
+   32 | #define bytes_to_ull SPX_NAMESPACE(bytes_to_ull)
+      |                      ^~~~~~~~~~~~~
+counter.c:48:15: note: in expansion of macro ‘bytes_to_ull’
+   48 |     counter = bytes_to_ull(counter_bytes_out, COUNTER_SIZE);
+      |               ^~~~~~~~~~~~
+hash_shake.c: In function ‘SPX_h2_generate_indices’:
+hash_shake.c:133:28: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  133 |             uint32_t idx = val & ((1U << log2_t) - 1);
+      |                            ^~~
+hash_shake.c:151:28: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  151 |             uint32_t idx = val & ((1U << log2_t) - 1);
+      |                            ^~~
+test/benchmark.c: In function ‘main’:
+test/benchmark.c:96:44: warning: conversion from ‘__time_t’ {aka ‘long int’} to ‘double’ may change value [-Wconversion]
+   96 |     result = ((stop.tv_sec - start.tv_sec) * 1e6 + \
+      |                                            ^
+test/benchmark.c:100:5: note: in expansion of macro ‘MEASURE_GENERIC’
+  100 |     MEASURE_GENERIC(\
+      |     ^~~~~~~~~~~~~~~
+test/benchmark.c:160:5: note: in expansion of macro ‘MEASURT’
+  160 |     MEASURT("thash                ", 1, thash(block, block, 1, &ctx, addr));
+      |     ^~~~~~~
+test/benchmark.c:97:40: warning: conversion from ‘__syscall_slong_t’ {aka ‘long int’} to ‘double’ may change value [-Wconversion]
+   97 |         (stop.tv_nsec - start.tv_nsec) / 1e3) / (double)CORR;\
+      |                                        ^
+test/benchmark.c:100:5: note: in expansion of macro ‘MEASURE_GENERIC’
+  100 |     MEASURE_GENERIC(\
+      |     ^~~~~~~~~~~~~~~
+test/benchmark.c:160:5: note: in expansion of macro ‘MEASURT’
+  160 |     MEASURT("thash                ", 1, thash(block, block, 1, &ctx, addr));
+      |     ^~~~~~~
+test/benchmark.c:96:44: warning: conversion from ‘__time_t’ {aka ‘long int’} to ‘double’ may change value [-Wconversion]
+   96 |     result = ((stop.tv_sec - start.tv_sec) * 1e6 + \
+      |                                            ^
+test/benchmark.c:108:36: note: in expansion of macro ‘MEASURE_GENERIC’
+  108 | #define MEASURE(TEXT, MUL, FNCALL) MEASURE_GENERIC(TEXT, MUL, FNCALL, 1)
+      |                                    ^~~~~~~~~~~~~~~
+test/benchmark.c:161:5: note: in expansion of macro ‘MEASURE’
+  161 |     MEASURE("Generating keypair.. ", 1, crypto_sign_keypair(pk, sk));
+      |     ^~~~~~~
+test/benchmark.c:97:40: warning: conversion from ‘__syscall_slong_t’ {aka ‘long int’} to ‘double’ may change value [-Wconversion]
+   97 |         (stop.tv_nsec - start.tv_nsec) / 1e3) / (double)CORR;\
+      |                                        ^
+test/benchmark.c:108:36: note: in expansion of macro ‘MEASURE_GENERIC’
+  108 | #define MEASURE(TEXT, MUL, FNCALL) MEASURE_GENERIC(TEXT, MUL, FNCALL, 1)
+      |                                    ^~~~~~~~~~~~~~~
+test/benchmark.c:161:5: note: in expansion of macro ‘MEASURE’
+  161 |     MEASURE("Generating keypair.. ", 1, crypto_sign_keypair(pk, sk));
+      |     ^~~~~~~
+test/benchmark.c:96:44: warning: conversion from ‘__time_t’ {aka ‘long int’} to ‘double’ may change value [-Wconversion]
+   96 |     result = ((stop.tv_sec - start.tv_sec) * 1e6 + \
+      |                                            ^
+test/benchmark.c:108:36: note: in expansion of macro ‘MEASURE_GENERIC’
+  108 | #define MEASURE(TEXT, MUL, FNCALL) MEASURE_GENERIC(TEXT, MUL, FNCALL, 1)
+      |                                    ^~~~~~~~~~~~~~~
+test/benchmark.c:162:5: note: in expansion of macro ‘MEASURE’
+  162 |     MEASURE("  - WOTS pk gen..    ", (1 << SPX_TREE_HEIGHT), wots_gen_pkx1(wots_pk, &ctx, addr));
+      |     ^~~~~~~
+test/benchmark.c:97:40: warning: conversion from ‘__syscall_slong_t’ {aka ‘long int’} to ‘double’ may change value [-Wconversion]
+   97 |         (stop.tv_nsec - start.tv_nsec) / 1e3) / (double)CORR;\
+      |                                        ^
+test/benchmark.c:108:36: note: in expansion of macro ‘MEASURE_GENERIC’
+  108 | #define MEASURE(TEXT, MUL, FNCALL) MEASURE_GENERIC(TEXT, MUL, FNCALL, 1)
+      |                                    ^~~~~~~~~~~~~~~
+test/benchmark.c:162:5: note: in expansion of macro ‘MEASURE’
+  162 |     MEASURE("  - WOTS pk gen..    ", (1 << SPX_TREE_HEIGHT), wots_gen_pkx1(wots_pk, &ctx, addr));
+      |     ^~~~~~~
+test/benchmark.c:96:44: warning: conversion from ‘__time_t’ {aka ‘long int’} to ‘double’ may change value [-Wconversion]
+   96 |     result = ((stop.tv_sec - start.tv_sec) * 1e6 + \
+      |                                            ^
+test/benchmark.c:108:36: note: in expansion of macro ‘MEASURE_GENERIC’
+  108 | #define MEASURE(TEXT, MUL, FNCALL) MEASURE_GENERIC(TEXT, MUL, FNCALL, 1)
+      |                                    ^~~~~~~~~~~~~~~
+test/benchmark.c:163:5: note: in expansion of macro ‘MEASURE’
+  163 |     MEASURE("Signing..            ", 1, crypto_sign(sm, &smlen, &slen, &tfslen, m, SPX_MLEN, sk));
+      |     ^~~~~~~
+test/benchmark.c:97:40: warning: conversion from ‘__syscall_slong_t’ {aka ‘long int’} to ‘double’ may change value [-Wconversion]
+   97 |         (stop.tv_nsec - start.tv_nsec) / 1e3) / (double)CORR;\
+      |                                        ^
+test/benchmark.c:108:36: note: in expansion of macro ‘MEASURE_GENERIC’
+  108 | #define MEASURE(TEXT, MUL, FNCALL) MEASURE_GENERIC(TEXT, MUL, FNCALL, 1)
+      |                                    ^~~~~~~~~~~~~~~
+test/benchmark.c:163:5: note: in expansion of macro ‘MEASURE’
+  163 |     MEASURE("Signing..            ", 1, crypto_sign(sm, &smlen, &slen, &tfslen, m, SPX_MLEN, sk));
+      |     ^~~~~~~
+test/benchmark.c:96:44: warning: conversion from ‘__time_t’ {aka ‘long int’} to ‘double’ may change value [-Wconversion]
+   96 |     result = ((stop.tv_sec - start.tv_sec) * 1e6 + \
+      |                                            ^
+test/benchmark.c:108:36: note: in expansion of macro ‘MEASURE_GENERIC’
+  108 | #define MEASURE(TEXT, MUL, FNCALL) MEASURE_GENERIC(TEXT, MUL, FNCALL, 1)
+      |                                    ^~~~~~~~~~~~~~~
+test/benchmark.c:164:5: note: in expansion of macro ‘MEASURE’
+  164 |     MEASURE("  - WOTS pk gen..    ", SPX_D * (1 << SPX_TREE_HEIGHT), wots_gen_pkx1(wots_pk, &ctx, addr));
+      |     ^~~~~~~
+test/benchmark.c:97:40: warning: conversion from ‘__syscall_slong_t’ {aka ‘long int’} to ‘double’ may change value [-Wconversion]
+   97 |         (stop.tv_nsec - start.tv_nsec) / 1e3) / (double)CORR;\
+      |                                        ^
+test/benchmark.c:108:36: note: in expansion of macro ‘MEASURE_GENERIC’
+  108 | #define MEASURE(TEXT, MUL, FNCALL) MEASURE_GENERIC(TEXT, MUL, FNCALL, 1)
+      |                                    ^~~~~~~~~~~~~~~
+test/benchmark.c:164:5: note: in expansion of macro ‘MEASURE’
+  164 |     MEASURE("  - WOTS pk gen..    ", SPX_D * (1 << SPX_TREE_HEIGHT), wots_gen_pkx1(wots_pk, &ctx, addr));
+      |     ^~~~~~~
+test/benchmark.c:96:44: warning: conversion from ‘__time_t’ {aka ‘long int’} to ‘double’ may change value [-Wconversion]
+   96 |     result = ((stop.tv_sec - start.tv_sec) * 1e6 + \
+      |                                            ^
+test/benchmark.c:108:36: note: in expansion of macro ‘MEASURE_GENERIC’
+  108 | #define MEASURE(TEXT, MUL, FNCALL) MEASURE_GENERIC(TEXT, MUL, FNCALL, 1)
+      |                                    ^~~~~~~~~~~~~~~
+test/benchmark.c:165:5: note: in expansion of macro ‘MEASURE’
+  165 |     MEASURE("Verifying..          ", 1, crypto_sign_open(mout, &mlen, &slen, &tfslen, sm, smlen, pk));
+      |     ^~~~~~~
+test/benchmark.c:97:40: warning: conversion from ‘__syscall_slong_t’ {aka ‘long int’} to ‘double’ may change value [-Wconversion]
+   97 |         (stop.tv_nsec - start.tv_nsec) / 1e3) / (double)CORR;\
+      |                                        ^
+test/benchmark.c:108:36: note: in expansion of macro ‘MEASURE_GENERIC’
+  108 | #define MEASURE(TEXT, MUL, FNCALL) MEASURE_GENERIC(TEXT, MUL, FNCALL, 1)
+      |                                    ^~~~~~~~~~~~~~~
+test/benchmark.c:165:5: note: in expansion of macro ‘MEASURE’
+  165 |     MEASURE("Verifying..          ", 1, crypto_sign_open(mout, &mlen, &slen, &tfslen, sm, smlen, pk));
+      |     ^~~~~~~
+test/benchmark.c:126:19: warning: unused variable ‘tfors_sig’ [-Wunused-variable]
+  126 |     unsigned char tfors_sig[SPX_TFORS_BYTES];
+      |                   ^~~~~~~~~
+test/benchmark.c:124:19: warning: unused variable ‘tfors_pk’ [-Wunused-variable]
+  124 |     unsigned char tfors_pk[SPX_TFORS_PK_BYTES];
+      |                   ^~~~~~~~
+/usr/bin/gcc -Wall -Wextra -Wpedantic -O3 -std=c99 -Wconversion -Wmissing-prototypes -DPARAMS=sphincs-shake-128f -DPARAMNAME=\"sphincs-shake-128f\" -I. -Itest  -o test/tfors_benchmark test/cycles.c address.c randombytes.c merkle.c wots.c wotsx1.c utils.c utilsx1.c tfors.c sign.c octopus.c counter.c fips202.c hash_shake.c thash_shake_simple.c test/tfors_benchmark.c 
+merkle.c: In function ‘SPX_merkle_sign’:
+merkle.c:34:24: warning: unsigned conversion from ‘int’ to ‘uint32_t’ {aka ‘unsigned int’} changes value from ‘-1’ to ‘4294967295’ [-Wsign-conversion]
+   34 |     uint32_t to_sign = ~0;
+      |                        ^
+In file included from params.h:4,
+                 from utils.h:5,
+                 from merkle.c:4:
+params/params-sphincs-shake-128f.h:4:26: warning: conversion to ‘int’ from ‘unsigned int’ may change the sign of the result [-Wsign-conversion]
+    4 | #define SPX_NAMESPACE(s) SPX_##s
+      |                          ^~~~
+wots.h:22:23: note: in expansion of macro ‘SPX_NAMESPACE’
+   22 | #define chain_lengths SPX_NAMESPACE(chain_lengths)
+      |                       ^~~~~~~~~~~~~
+merkle.c:65:24: note: in expansion of macro ‘chain_lengths’
+   65 |                 csum = chain_lengths(steps, digest);
+      |                        ^~~~~~~~~~~~~
+merkle.c:72:44: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+   72 |                     steps[SPX_WOTS_LEN1] = csum - WOTS_SUM_BASE;
+      |                                            ^~~~
+merkle.c: In function ‘SPX_merkle_gen_root’:
+merkle.c:121:17: warning: unsigned conversion from ‘int’ to ‘uint32_t’ {aka ‘unsigned int’} changes value from ‘-1’ to ‘4294967295’ [-Wsign-conversion]
+  121 |                 ~0 /* ~0 means "don't bother generating an auth path */,
+      |                 ^~
+wots.c: In function ‘base_w’:
+wots.c:64:23: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+   64 |             output[i] ^= ((input[offset >> 3] >> (offset & 0x7)) & 0x1) << j;
+      |                       ^~
+wots.c:75:23: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+   75 |             output[i] ^= ((input[offset >> 3] >> (offset & 0x7)) & 0x1) << j;
+      |                       ^~
+In file included from params.h:4,
+                 from utils.h:5,
+                 from wots.c:4:
+wots.c: In function ‘SPX_wots_pk_from_sig’:
+params/params-sphincs-shake-128f.h:4:26: warning: conversion to ‘int’ from ‘unsigned int’ may change the sign of the result [-Wsign-conversion]
+    4 | #define SPX_NAMESPACE(s) SPX_##s
+      |                          ^~~~
+wots.h:22:23: note: in expansion of macro ‘SPX_NAMESPACE’
+   22 | #define chain_lengths SPX_NAMESPACE(chain_lengths)
+      |                       ^~~~~~~~~~~~~
+wots.c:147:12: note: in expansion of macro ‘chain_lengths’
+  147 |     csum = chain_lengths(lengths, digest);
+      |            ^~~~~~~~~~~~~
+wots.c:163:34: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+  163 |         lengths[SPX_WOTS_LEN1] = csum - WOTS_SUM_BASE;
+      |                                  ^~~~
+tfors.c: In function ‘sort_indices’:
+tfors.c:47:17: warning: conversion to ‘int’ from ‘uint32_t’ {aka ‘unsigned int’} may change the sign of the result [-Wsign-conversion]
+   47 |         int j = i - 1;
+      |                 ^
+tfors.c: In function ‘message_to_indices’:
+tfors.c:85:58: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+   85 |             indices2[i] |= ((m[byte_pos] >> bit_in_byte) & 1u) << (unsigned int)j;
+      |                                                          ^
+tfors.c: In function ‘SPX_tfors_sign’:
+tfors.c:135:69: warning: pointers to arrays with different qualifiers are incompatible in ISO C [-Wpedantic]
+  135 |     octopus_compute_auth_paths(pk, &auth, indices_tmp, SPX_TFORS_K, leaf_sk, ctx, tfors_tree_addr);
+      |                                                                     ^~~~~~~
+At top level:
+tfors.c:15:13: warning: ‘print_spx_addr’ defined but not used [-Wunused-function]
+   15 | static void print_spx_addr(const char *name, const uint32_t addr[8])
+      |             ^~~~~~~~~~~~~~
+sign.c: In function ‘crypto_sign_verify’:
+sign.c:210:14: warning: unused variable ‘indices’ [-Wunused-variable]
+  210 |     uint32_t indices[SPX_TFORS_K];
+      |              ^~~~~~~
+sign.c:196:51: warning: unused parameter ‘siglen’ [-Wunused-parameter]
+  196 | int crypto_sign_verify(const uint8_t *sig, size_t siglen, size_t tfors_siglen,
+      |                                            ~~~~~~~^~~~~~
+octopus.c: In function ‘octopus_compute_auth_paths’:
+octopus.c:259:32: warning: unused variable ‘right’ [-Wunused-variable]
+  259 |                 unsigned char *right = &current[SPX_N];
+      |                                ^~~~~
+octopus.c:240:22: warning: unused variable ‘sibling_idx’ [-Wunused-variable]
+  240 |             uint32_t sibling_idx = node_idx ^ 1;
+      |                      ^~~~~~~~~~~
+At top level:
+octopus.c:76:13: warning: ‘compute_parent_hash’ defined but not used [-Wunused-function]
+   76 | static void compute_parent_hash(unsigned char *parent_hash,
+      |             ^~~~~~~~~~~~~~~~~~~
+octopus.c:12:13: warning: ‘print_spx_addr’ defined but not used [-Wunused-function]
+   12 | static void print_spx_addr(const char *name, const uint32_t addr[8])
+      |             ^~~~~~~~~~~~~~
+In file included from params.h:4,
+                 from address.h:5,
+                 from counter.c:4:
+counter.c: In function ‘get_wots_counter’:
+params/params-sphincs-shake-128f.h:4:26: warning: conversion from ‘long long unsigned int’ to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+    4 | #define SPX_NAMESPACE(s) SPX_##s
+      |                          ^~~~
+utils.h:32:22: note: in expansion of macro ‘SPX_NAMESPACE’
+   32 | #define bytes_to_ull SPX_NAMESPACE(bytes_to_ull)
+      |                      ^~~~~~~~~~~~~
+counter.c:30:15: note: in expansion of macro ‘bytes_to_ull’
+   30 |     counter = bytes_to_ull(counter_bytes, COUNTER_SIZE);
+      |               ^~~~~~~~~~~~
+counter.c: In function ‘get_fors_counter’:
+params/params-sphincs-shake-128f.h:4:26: warning: conversion from ‘long long unsigned int’ to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+    4 | #define SPX_NAMESPACE(s) SPX_##s
+      |                          ^~~~
+utils.h:32:22: note: in expansion of macro ‘SPX_NAMESPACE’
+   32 | #define bytes_to_ull SPX_NAMESPACE(bytes_to_ull)
+      |                      ^~~~~~~~~~~~~
+counter.c:48:15: note: in expansion of macro ‘bytes_to_ull’
+   48 |     counter = bytes_to_ull(counter_bytes_out, COUNTER_SIZE);
+      |               ^~~~~~~~~~~~
+hash_shake.c: In function ‘SPX_h2_generate_indices’:
+hash_shake.c:133:28: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  133 |             uint32_t idx = val & ((1U << log2_t) - 1);
+      |                            ^~~
+hash_shake.c:151:28: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  151 |             uint32_t idx = val & ((1U << log2_t) - 1);
+      |                            ^~~
+test/tfors_benchmark.c: In function ‘main’:
+test/tfors_benchmark.c:154:40: warning: conversion to ‘uint32_t’ {aka ‘unsigned int’} from ‘int’ may change the sign of the result [-Wsign-conversion]
+  154 |             set_tree_index(tfors_addr, i);
+      |                                        ^
+test/tfors_benchmark.c:90:9: note: in definition of macro ‘MEASURE_GENERIC’
+   90 |         FNCALL;\
+      |         ^~~~~~
+test/tfors_benchmark.c:151:5: note: in expansion of macro ‘MEASURE’
+  151 |     MEASURE("TFORS key generation..  ", 1, {
+      |     ^~~~~~~
+test/tfors_benchmark.c:94:44: warning: conversion from ‘__time_t’ {aka ‘long int’} to ‘double’ may change value [-Wconversion]
+   94 |     result = ((stop.tv_sec - start.tv_sec) * 1e6 + \
+      |                                            ^
+test/tfors_benchmark.c:108:43: note: in expansion of macro ‘MEASURE_GENERIC’
+  108 | #define MEASURE(TEXT, MUL, FNCALL, STAGE) MEASURE_GENERIC(TEXT, MUL, FNCALL, 1, STAGE)
+      |                                           ^~~~~~~~~~~~~~~
+test/tfors_benchmark.c:151:5: note: in expansion of macro ‘MEASURE’
+  151 |     MEASURE("TFORS key generation..  ", 1, {
+      |     ^~~~~~~
+test/tfors_benchmark.c:95:40: warning: conversion from ‘__syscall_slong_t’ {aka ‘long int’} to ‘double’ may change value [-Wconversion]
+   95 |         (stop.tv_nsec - start.tv_nsec) / 1e3) / (double)CORR;\
+      |                                        ^
+test/tfors_benchmark.c:108:43: note: in expansion of macro ‘MEASURE_GENERIC’
+  108 | #define MEASURE(TEXT, MUL, FNCALL, STAGE) MEASURE_GENERIC(TEXT, MUL, FNCALL, 1, STAGE)
+      |                                           ^~~~~~~~~~~~~~~
+test/tfors_benchmark.c:151:5: note: in expansion of macro ‘MEASURE’
+  151 |     MEASURE("TFORS key generation..  ", 1, {
+      |     ^~~~~~~
+test/tfors_benchmark.c:94:44: warning: conversion from ‘__time_t’ {aka ‘long int’} to ‘double’ may change value [-Wconversion]
+   94 |     result = ((stop.tv_sec - start.tv_sec) * 1e6 + \
+      |                                            ^
+test/tfors_benchmark.c:108:43: note: in expansion of macro ‘MEASURE_GENERIC’
+  108 | #define MEASURE(TEXT, MUL, FNCALL, STAGE) MEASURE_GENERIC(TEXT, MUL, FNCALL, 1, STAGE)
+      |                                           ^~~~~~~~~~~~~~~
+test/tfors_benchmark.c:161:5: note: in expansion of macro ‘MEASURE’
+  161 |     MEASURE("TFORS signing..         ", 1,
+      |     ^~~~~~~
+test/tfors_benchmark.c:95:40: warning: conversion from ‘__syscall_slong_t’ {aka ‘long int’} to ‘double’ may change value [-Wconversion]
+   95 |         (stop.tv_nsec - start.tv_nsec) / 1e3) / (double)CORR;\
+      |                                        ^
+test/tfors_benchmark.c:108:43: note: in expansion of macro ‘MEASURE_GENERIC’
+  108 | #define MEASURE(TEXT, MUL, FNCALL, STAGE) MEASURE_GENERIC(TEXT, MUL, FNCALL, 1, STAGE)
+      |                                           ^~~~~~~~~~~~~~~
+test/tfors_benchmark.c:161:5: note: in expansion of macro ‘MEASURE’
+  161 |     MEASURE("TFORS signing..         ", 1,
+      |     ^~~~~~~
+test/tfors_benchmark.c:94:44: warning: conversion from ‘__time_t’ {aka ‘long int’} to ‘double’ may change value [-Wconversion]
+   94 |     result = ((stop.tv_sec - start.tv_sec) * 1e6 + \
+      |                                            ^
+test/tfors_benchmark.c:108:43: note: in expansion of macro ‘MEASURE_GENERIC’
+  108 | #define MEASURE(TEXT, MUL, FNCALL, STAGE) MEASURE_GENERIC(TEXT, MUL, FNCALL, 1, STAGE)
+      |                                           ^~~~~~~~~~~~~~~
+test/tfors_benchmark.c:165:5: note: in expansion of macro ‘MEASURE’
+  165 |     MEASURE("TFORS verification..    ", 1,
+      |     ^~~~~~~
+test/tfors_benchmark.c:95:40: warning: conversion from ‘__syscall_slong_t’ {aka ‘long int’} to ‘double’ may change value [-Wconversion]
+   95 |         (stop.tv_nsec - start.tv_nsec) / 1e3) / (double)CORR;\
+      |                                        ^
+test/tfors_benchmark.c:108:43: note: in expansion of macro ‘MEASURE_GENERIC’
+  108 | #define MEASURE(TEXT, MUL, FNCALL, STAGE) MEASURE_GENERIC(TEXT, MUL, FNCALL, 1, STAGE)
+      |                                           ^~~~~~~~~~~~~~~
+test/tfors_benchmark.c:165:5: note: in expansion of macro ‘MEASURE’
+  165 |     MEASURE("TFORS verification..    ", 1,
+      |     ^~~~~~~
+/usr/bin/gcc -Wall -Wextra -Wpedantic -O3 -std=c99 -Wconversion -Wmissing-prototypes -DPARAMS=sphincs-shake-128f -DPARAMNAME=\"sphincs-shake-128f\" -I. -Itest  -o test/gwots_benchmark test/cycles.c address.c randombytes.c merkle.c wots.c wotsx1.c utils.c utilsx1.c tfors.c sign.c octopus.c counter.c fips202.c hash_shake.c thash_shake_simple.c test/gwots_benchmark.c 
+merkle.c: In function ‘SPX_merkle_sign’:
+merkle.c:34:24: warning: unsigned conversion from ‘int’ to ‘uint32_t’ {aka ‘unsigned int’} changes value from ‘-1’ to ‘4294967295’ [-Wsign-conversion]
+   34 |     uint32_t to_sign = ~0;
+      |                        ^
+In file included from params.h:4,
+                 from utils.h:5,
+                 from merkle.c:4:
+params/params-sphincs-shake-128f.h:4:26: warning: conversion to ‘int’ from ‘unsigned int’ may change the sign of the result [-Wsign-conversion]
+    4 | #define SPX_NAMESPACE(s) SPX_##s
+      |                          ^~~~
+wots.h:22:23: note: in expansion of macro ‘SPX_NAMESPACE’
+   22 | #define chain_lengths SPX_NAMESPACE(chain_lengths)
+      |                       ^~~~~~~~~~~~~
+merkle.c:65:24: note: in expansion of macro ‘chain_lengths’
+   65 |                 csum = chain_lengths(steps, digest);
+      |                        ^~~~~~~~~~~~~
+merkle.c:72:44: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+   72 |                     steps[SPX_WOTS_LEN1] = csum - WOTS_SUM_BASE;
+      |                                            ^~~~
+merkle.c: In function ‘SPX_merkle_gen_root’:
+merkle.c:121:17: warning: unsigned conversion from ‘int’ to ‘uint32_t’ {aka ‘unsigned int’} changes value from ‘-1’ to ‘4294967295’ [-Wsign-conversion]
+  121 |                 ~0 /* ~0 means "don't bother generating an auth path */,
+      |                 ^~
+wots.c: In function ‘base_w’:
+wots.c:64:23: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+   64 |             output[i] ^= ((input[offset >> 3] >> (offset & 0x7)) & 0x1) << j;
+      |                       ^~
+wots.c:75:23: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+   75 |             output[i] ^= ((input[offset >> 3] >> (offset & 0x7)) & 0x1) << j;
+      |                       ^~
+In file included from params.h:4,
+                 from utils.h:5,
+                 from wots.c:4:
+wots.c: In function ‘SPX_wots_pk_from_sig’:
+params/params-sphincs-shake-128f.h:4:26: warning: conversion to ‘int’ from ‘unsigned int’ may change the sign of the result [-Wsign-conversion]
+    4 | #define SPX_NAMESPACE(s) SPX_##s
+      |                          ^~~~
+wots.h:22:23: note: in expansion of macro ‘SPX_NAMESPACE’
+   22 | #define chain_lengths SPX_NAMESPACE(chain_lengths)
+      |                       ^~~~~~~~~~~~~
+wots.c:147:12: note: in expansion of macro ‘chain_lengths’
+  147 |     csum = chain_lengths(lengths, digest);
+      |            ^~~~~~~~~~~~~
+wots.c:163:34: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+  163 |         lengths[SPX_WOTS_LEN1] = csum - WOTS_SUM_BASE;
+      |                                  ^~~~
+tfors.c: In function ‘sort_indices’:
+tfors.c:47:17: warning: conversion to ‘int’ from ‘uint32_t’ {aka ‘unsigned int’} may change the sign of the result [-Wsign-conversion]
+   47 |         int j = i - 1;
+      |                 ^
+tfors.c: In function ‘message_to_indices’:
+tfors.c:85:58: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+   85 |             indices2[i] |= ((m[byte_pos] >> bit_in_byte) & 1u) << (unsigned int)j;
+      |                                                          ^
+tfors.c: In function ‘SPX_tfors_sign’:
+tfors.c:135:69: warning: pointers to arrays with different qualifiers are incompatible in ISO C [-Wpedantic]
+  135 |     octopus_compute_auth_paths(pk, &auth, indices_tmp, SPX_TFORS_K, leaf_sk, ctx, tfors_tree_addr);
+      |                                                                     ^~~~~~~
+At top level:
+tfors.c:15:13: warning: ‘print_spx_addr’ defined but not used [-Wunused-function]
+   15 | static void print_spx_addr(const char *name, const uint32_t addr[8])
+      |             ^~~~~~~~~~~~~~
+sign.c: In function ‘crypto_sign_verify’:
+sign.c:210:14: warning: unused variable ‘indices’ [-Wunused-variable]
+  210 |     uint32_t indices[SPX_TFORS_K];
+      |              ^~~~~~~
+sign.c:196:51: warning: unused parameter ‘siglen’ [-Wunused-parameter]
+  196 | int crypto_sign_verify(const uint8_t *sig, size_t siglen, size_t tfors_siglen,
+      |                                            ~~~~~~~^~~~~~
+octopus.c: In function ‘octopus_compute_auth_paths’:
+octopus.c:259:32: warning: unused variable ‘right’ [-Wunused-variable]
+  259 |                 unsigned char *right = &current[SPX_N];
+      |                                ^~~~~
+octopus.c:240:22: warning: unused variable ‘sibling_idx’ [-Wunused-variable]
+  240 |             uint32_t sibling_idx = node_idx ^ 1;
+      |                      ^~~~~~~~~~~
+At top level:
+octopus.c:76:13: warning: ‘compute_parent_hash’ defined but not used [-Wunused-function]
+   76 | static void compute_parent_hash(unsigned char *parent_hash,
+      |             ^~~~~~~~~~~~~~~~~~~
+octopus.c:12:13: warning: ‘print_spx_addr’ defined but not used [-Wunused-function]
+   12 | static void print_spx_addr(const char *name, const uint32_t addr[8])
+      |             ^~~~~~~~~~~~~~
+In file included from params.h:4,
+                 from address.h:5,
+                 from counter.c:4:
+counter.c: In function ‘get_wots_counter’:
+params/params-sphincs-shake-128f.h:4:26: warning: conversion from ‘long long unsigned int’ to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+    4 | #define SPX_NAMESPACE(s) SPX_##s
+      |                          ^~~~
+utils.h:32:22: note: in expansion of macro ‘SPX_NAMESPACE’
+   32 | #define bytes_to_ull SPX_NAMESPACE(bytes_to_ull)
+      |                      ^~~~~~~~~~~~~
+counter.c:30:15: note: in expansion of macro ‘bytes_to_ull’
+   30 |     counter = bytes_to_ull(counter_bytes, COUNTER_SIZE);
+      |               ^~~~~~~~~~~~
+counter.c: In function ‘get_fors_counter’:
+params/params-sphincs-shake-128f.h:4:26: warning: conversion from ‘long long unsigned int’ to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+    4 | #define SPX_NAMESPACE(s) SPX_##s
+      |                          ^~~~
+utils.h:32:22: note: in expansion of macro ‘SPX_NAMESPACE’
+   32 | #define bytes_to_ull SPX_NAMESPACE(bytes_to_ull)
+      |                      ^~~~~~~~~~~~~
+counter.c:48:15: note: in expansion of macro ‘bytes_to_ull’
+   48 |     counter = bytes_to_ull(counter_bytes_out, COUNTER_SIZE);
+      |               ^~~~~~~~~~~~
+hash_shake.c: In function ‘SPX_h2_generate_indices’:
+hash_shake.c:133:28: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  133 |             uint32_t idx = val & ((1U << log2_t) - 1);
+      |                            ^~~
+hash_shake.c:151:28: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  151 |             uint32_t idx = val & ((1U << log2_t) - 1);
+      |                            ^~~
+test/gwots_benchmark.c: In function ‘main’:
+test/gwots_benchmark.c:98:44: warning: conversion from ‘__time_t’ {aka ‘long int’} to ‘double’ may change value [-Wconversion]
+   98 |     result = ((stop.tv_sec - start.tv_sec) * 1e6 +      \
+      |                                            ^
+test/gwots_benchmark.c:102:43: note: in expansion of macro ‘MEASURE_GENERIC’
+  102 | #define MEASURE(TEXT, MUL, FNCALL, STAGE) MEASURE_GENERIC(TEXT, MUL, FNCALL, 1, STAGE)
+      |                                           ^~~~~~~~~~~~~~~
+test/gwots_benchmark.c:151:5: note: in expansion of macro ‘MEASURE’
+  151 |     MEASURE("WOTS pk gen..           ", 1,
+      |     ^~~~~~~
+test/gwots_benchmark.c:99:40: warning: conversion from ‘__syscall_slong_t’ {aka ‘long int’} to ‘double’ may change value [-Wconversion]
+   99 |         (stop.tv_nsec - start.tv_nsec) / 1e3) / (double)CORR; \
+      |                                        ^
+test/gwots_benchmark.c:102:43: note: in expansion of macro ‘MEASURE_GENERIC’
+  102 | #define MEASURE(TEXT, MUL, FNCALL, STAGE) MEASURE_GENERIC(TEXT, MUL, FNCALL, 1, STAGE)
+      |                                           ^~~~~~~~~~~~~~~
+test/gwots_benchmark.c:151:5: note: in expansion of macro ‘MEASURE’
+  151 |     MEASURE("WOTS pk gen..           ", 1,
+      |     ^~~~~~~
+test/gwots_benchmark.c:98:44: warning: conversion from ‘__time_t’ {aka ‘long int’} to ‘double’ may change value [-Wconversion]
+   98 |     result = ((stop.tv_sec - start.tv_sec) * 1e6 +      \
+      |                                            ^
+test/gwots_benchmark.c:102:43: note: in expansion of macro ‘MEASURE_GENERIC’
+  102 | #define MEASURE(TEXT, MUL, FNCALL, STAGE) MEASURE_GENERIC(TEXT, MUL, FNCALL, 1, STAGE)
+      |                                           ^~~~~~~~~~~~~~~
+test/gwots_benchmark.c:155:5: note: in expansion of macro ‘MEASURE’
+  155 |     MEASURE("merkle_sign..           ", 1, {
+      |     ^~~~~~~
+test/gwots_benchmark.c:99:40: warning: conversion from ‘__syscall_slong_t’ {aka ‘long int’} to ‘double’ may change value [-Wconversion]
+   99 |         (stop.tv_nsec - start.tv_nsec) / 1e3) / (double)CORR; \
+      |                                        ^
+test/gwots_benchmark.c:102:43: note: in expansion of macro ‘MEASURE_GENERIC’
+  102 | #define MEASURE(TEXT, MUL, FNCALL, STAGE) MEASURE_GENERIC(TEXT, MUL, FNCALL, 1, STAGE)
+      |                                           ^~~~~~~~~~~~~~~
+test/gwots_benchmark.c:155:5: note: in expansion of macro ‘MEASURE’
+  155 |     MEASURE("merkle_sign..           ", 1, {
+      |     ^~~~~~~
+test/gwots_benchmark.c:98:44: warning: conversion from ‘__time_t’ {aka ‘long int’} to ‘double’ may change value [-Wconversion]
+   98 |     result = ((stop.tv_sec - start.tv_sec) * 1e6 +      \
+      |                                            ^
+test/gwots_benchmark.c:102:43: note: in expansion of macro ‘MEASURE_GENERIC’
+  102 | #define MEASURE(TEXT, MUL, FNCALL, STAGE) MEASURE_GENERIC(TEXT, MUL, FNCALL, 1, STAGE)
+      |                                           ^~~~~~~~~~~~~~~
+test/gwots_benchmark.c:165:5: note: in expansion of macro ‘MEASURE’
+  165 |     MEASURE("wots_pk_from_sig..      ", 1, {
+      |     ^~~~~~~
+test/gwots_benchmark.c:99:40: warning: conversion from ‘__syscall_slong_t’ {aka ‘long int’} to ‘double’ may change value [-Wconversion]
+   99 |         (stop.tv_nsec - start.tv_nsec) / 1e3) / (double)CORR; \
+      |                                        ^
+test/gwots_benchmark.c:102:43: note: in expansion of macro ‘MEASURE_GENERIC’
+  102 | #define MEASURE(TEXT, MUL, FNCALL, STAGE) MEASURE_GENERIC(TEXT, MUL, FNCALL, 1, STAGE)
+      |                                           ^~~~~~~~~~~~~~~
+test/gwots_benchmark.c:165:5: note: in expansion of macro ‘MEASURE’
+  165 |     MEASURE("wots_pk_from_sig..      ", 1, {
+      |     ^~~~~~~
+test/gwots_benchmark.c:98:44: warning: conversion from ‘__time_t’ {aka ‘long int’} to ‘double’ may change value [-Wconversion]
+   98 |     result = ((stop.tv_sec - start.tv_sec) * 1e6 +      \
+      |                                            ^
+test/gwots_benchmark.c:102:43: note: in expansion of macro ‘MEASURE_GENERIC’
+  102 | #define MEASURE(TEXT, MUL, FNCALL, STAGE) MEASURE_GENERIC(TEXT, MUL, FNCALL, 1, STAGE)
+      |                                           ^~~~~~~~~~~~~~~
+test/gwots_benchmark.c:171:5: note: in expansion of macro ‘MEASURE’
+  171 |     MEASURE("Full verify path..      ", 1, {
+      |     ^~~~~~~
+test/gwots_benchmark.c:99:40: warning: conversion from ‘__syscall_slong_t’ {aka ‘long int’} to ‘double’ may change value [-Wconversion]
+   99 |         (stop.tv_nsec - start.tv_nsec) / 1e3) / (double)CORR; \
+      |                                        ^
+test/gwots_benchmark.c:102:43: note: in expansion of macro ‘MEASURE_GENERIC’
+  102 | #define MEASURE(TEXT, MUL, FNCALL, STAGE) MEASURE_GENERIC(TEXT, MUL, FNCALL, 1, STAGE)
+      |                                           ^~~~~~~~~~~~~~~
+test/gwots_benchmark.c:171:5: note: in expansion of macro ‘MEASURE’
+  171 |     MEASURE("Full verify path..      ", 1, {
+      |     ^~~~~~~
