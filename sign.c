@@ -16,7 +16,7 @@
 #include "utils.h"
 #include "merkle.h"
 
-#define SPX_MAX_COUNTER 1000
+#define SPX_MAX_COUNTER 10000
 #define SPX_MAX_OPTRAND_TRIES 256
 #define SPX_MAX_MLEN 1024
 

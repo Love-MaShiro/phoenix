@@ -9,14 +9,14 @@
 /* Hash output length in bytes. */
 #define SPX_N 16
 /* Height of the hypertree. */
-#define SPX_FULL_HEIGHT 72
+#define SPX_FULL_HEIGHT 66
 /* Number of subtree layer. */
-#define SPX_D 8
+#define SPX_D 11
 /* TFORS tree dimensions. */
-#define SPX_TFORS_A 13
-#define SPX_TFORS_K_PRIME 16
-#define SPX_TFORS_LOG_K_PRIME 4
-#define SPX_TFORS_K 9
+#define SPX_TFORS_A 8
+#define SPX_TFORS_K_PRIME 32
+#define SPX_TFORS_LOG_K_PRIME 5
+#define SPX_TFORS_K 17
 #define SPX_TFORS_HEIGHT (SPX_TFORS_LOG_K_PRIME + SPX_TFORS_A)
 #define SPX_TFORS_T (1 << SPX_TFORS_A)
 /* Winternitz parameter, */
@@ -32,12 +32,12 @@
 #define SPX_ADDR_BYTES 32
 
 /* WOTS parameters. */
-#define SPX_WOTS_W1_LEN 7
-#define SPX_WOTS_W2_LEN 10
+#define SPX_WOTS_W1_LEN 8
+#define SPX_WOTS_W2_LEN 9
 #define SPX_WOTS_LEN1 (SPX_WOTS_W1_LEN + SPX_WOTS_W2_LEN)
 
 /* SPX_WOTS_LEN2 is fixed */
-#define SPX_WOTS_LEN2 0
+#define SPX_WOTS_LEN2 1
 
 #define SPX_WOTS_LEN (SPX_WOTS_LEN1 + SPX_WOTS_LEN2)
 #define SPX_WOTS_BYTES (SPX_WOTS_LEN * SPX_N)
@@ -54,7 +54,7 @@
 #define SPX_TFORS_MSG_BYTES ((SPX_TFORS_A * SPX_TFORS_K + 7) / 8 + SPX_N)
 #define SPX_TFORS_BYTES (SPX_TFORS_K * SPX_N + \
                          SPX_TFORS_K * SPX_TFORS_HEIGHT * SPX_N)
-#define SPX_TFORS_SIG_MAX (SPX_TFORS_BYTES * 7) / 10
+#define SPX_TFORS_SIG_MAX 1964
 #define SPX_TFORS_PK_BYTES SPX_N
 
 /* custom upgrade parameter definitions */

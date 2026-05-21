@@ -50,7 +50,7 @@
 #define SPX_TFORS_MSG_BYTES ((SPX_TFORS_A * SPX_TFORS_K + 7) / 8 + SPX_N)
 #define SPX_TFORS_BYTES (SPX_TFORS_K * SPX_N + \
                          SPX_TFORS_K * SPX_TFORS_HEIGHT * SPX_N)
-#define SPX_TFORS_SIG_MAX (SPX_TFORS_BYTES * 7) / 10
+#define SPX_TFORS_SIG_MAX (SPX_TFORS_BYTES * 65) / 100
 #define SPX_TFORS_PK_BYTES SPX_N
 
 /* custom upgrade parameter definitions */

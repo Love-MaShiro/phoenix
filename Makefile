@@ -1,5 +1,5 @@
-PARAMS = phoenix-haraka-128f
-THASH = robust
+PARAMS = phoenix-shake-256s
+THASH = simple
 
 CC=/usr/bin/gcc
 CFLAGS=-Wall -Wextra -Wpedantic -O3 -std=c99 -Wconversion -Wmissing-prototypes -DPARAMS=$(PARAMS) -DPARAMNAME=\"$(PARAMS)\" -I. -Itest -DALLOW_DEEP_TREES $(EXTRA_CFLAGS)
@@ -29,8 +29,8 @@ TESTS =         test/tfors \
 		test/gwots \
 		test/haraka
 
-BENCHMARK = test/benchmark \
-		test/tfors_benchmark \
+BENCHMARK = test/benchmark 
+# 		test/tfors_benchmark \
 		test/gwots_benchmark
 
 .PHONY: clean test benchmark
