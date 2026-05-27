@@ -1,0 +1,25 @@
+# Build directories
+ref/build/
+ref/build-*/
+shake-avx2/build/
+shake-avx2/build-*/
+
+# Generated binaries
+ref/PQCgenKAT_sign
+shake-avx2/PQCgenKAT_sign
+ref/sign.o
+
+# Generated test binaries
+ref/test/*
+!ref/test/*.c
+shake-avx2/test/*
+!shake-avx2/test/*.c
+!shake-avx2/test/*.h
+
+# Generated KAT outputs
+PQCsignKAT_*.rsp
+PQCsignKAT_*.req
+
+# Common compiler byproducts
+*.o
+*.o.d

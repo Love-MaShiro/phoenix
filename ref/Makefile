@@ -19,6 +19,10 @@ ifneq (,$(findstring sha2,$(PARAMS)))
 	SOURCES += sha2.c hash_sha2.c thash_sha2_$(THASH).c
 	HEADERS += sha2.h
 endif
+ifneq (,$(findstring sm3,$(PARAMS)))
+	SOURCES += sm3.c hash_sm3.c thash_sm3_$(THASH).c
+	HEADERS += sm3.h
+endif
 
 DET_SOURCES = $(SOURCES:randombytes.%=rng.%)
 DET_HEADERS = $(HEADERS:randombytes.%=rng.%)
