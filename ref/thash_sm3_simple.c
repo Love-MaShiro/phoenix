@@ -56,8 +56,17 @@ void thash_fin(unsigned char *out, const unsigned char *in, unsigned int inblock
     memcpy(buf, addr, SPX_SM3_ADDR_BYTES);
 
     /* 2. XOR the input with the pre-computed bitmask */
-    for (i = 0; i < inblocks * SPX_N; i++) {
-        buf[SPX_SM3_ADDR_BYTES + i] = in[i] ^ bitmask[i];
+    {
+        uint32_t *dst32 = (uint32_t *)(buf + SPX_SM3_ADDR_BYTES);
+        const uint32_t *in32 = (const uint32_t *)in;
+        const uint32_t *mask32 = (const uint32_t *)bitmask;
+        unsigned int n = (inblocks * SPX_N) / 4;
+        for (i = 0; i < n; i++) {
+            dst32[i] = in32[i] ^ mask32[i];
+        }
+        for (i = n * 4; i < inblocks * SPX_N; i++) {
+            buf[SPX_SM3_ADDR_BYTES + i] = in[i] ^ bitmask[i];
+        }
     }
 
     /* 3. Finalize the hash using the pre-computed state */

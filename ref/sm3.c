@@ -55,12 +55,31 @@ static const uint8_t iv_sm3[32] = {
     0xe3, 0x8d, 0xee, 0x4d, 0xb0, 0xfb, 0x0e, 0x4e
 };
 
+/* Pre-computed SM3 round constants T_j = ROTL32(c, j) */
+static const uint32_t sm3_Tj[64] = {
+    0x79cc4519u, 0xf3988a32u, 0xe7311465u, 0xce6228cbu,
+    0x9cc45197u, 0x3988a32fu, 0x7311465eu, 0xe6228cbcu,
+    0xcc451979u, 0x988a32f3u, 0x311465e7u, 0x6228cbceu,
+    0xc451979cu, 0x88a32f39u, 0x11465e73u, 0x228cbce6u,
+    0x9d8a7a87u, 0x3b14f50fu, 0x7629ea1eu, 0xec53d43cu,
+    0xd8a7a879u, 0xb14f50f3u, 0x629ea1e7u, 0xc53d43ceu,
+    0x8a7a879du, 0x14f50f3bu, 0x29ea1e76u, 0x53d43cecu,
+    0xa7a879d8u, 0x4f50f3b1u, 0x9ea1e762u, 0x3d43cec5u,
+    0x7a879d8au, 0xf50f3b14u, 0xea1e7629u, 0xd43cec53u,
+    0xa879d8a7u, 0x50f3b14fu, 0xa1e7629eu, 0x43cec53du,
+    0x879d8a7au, 0x0f3b14f5u, 0x1e7629eau, 0x3cec53d4u,
+    0x79d8a7a8u, 0xf3b14f50u, 0xe7629ea1u, 0xcec53d43u,
+    0x9d8a7a87u, 0x3b14f50fu, 0x7629ea1eu, 0xec53d43cu,
+    0xd8a7a879u, 0xb14f50f3u, 0x629ea1e7u, 0xc53d43ceu,
+    0x8a7a879du, 0x14f50f3bu, 0x29ea1e76u, 0x53d43cecu,
+    0xa7a879d8u, 0x4f50f3b1u, 0x9ea1e762u, 0x3d43cec5u
+};
+
 static size_t crypto_hashblocks_sm3(uint8_t *statebytes,
                                     const uint8_t *in, size_t inlen) {
     uint32_t A, B, C, D, E, F, G, H;
     uint32_t SS1, SS2, TT1, TT2;
     uint32_t W[68], Wp[64];
-    uint32_t T;
     unsigned int j;
 
     A = load_bigendian_32(statebytes + 0);
@@ -87,20 +106,29 @@ static size_t crypto_hashblocks_sm3(uint8_t *statebytes,
 
         uint32_t a = A, b = B, c = C, d = D, e = E, f = F, g = G, h = H;
 
-        /* 64 rounds */
-        for (j = 0; j < 64; j++) {
-            T = (j < 16) ? 0x79cc4519u : 0x7a879d8au;
-            SS1 = ROTL32(ROTL32(a, 12) + e + ROTL32(T, j), 7);
-            SS2 = SS1 ^ ROTL32(a, 12);
-
-            if (j < 16) {
-                TT1 = FF0(a, b, c) + d + SS2 + Wp[j];
-                TT2 = GG0(e, f, g) + h + SS1 + W[j];
-            } else {
-                TT1 = FF1(a, b, c) + d + SS2 + Wp[j];
-                TT2 = GG1(e, f, g) + h + SS1 + W[j];
-            }
-
+        /* 64 rounds: 0..15 */
+        for (j = 0; j < 16; j++) {
+            uint32_t a12 = ROTL32(a, 12);
+            SS1 = ROTL32(a12 + e + sm3_Tj[j], 7);
+            SS2 = SS1 ^ a12;
+            TT1 = FF0(a, b, c) + d + SS2 + Wp[j];
+            TT2 = GG0(e, f, g) + h + SS1 + W[j];
+            d = c;
+            c = ROTL32(b, 9);
+            b = a;
+            a = TT1;
+            h = g;
+            g = ROTL32(f, 19);
+            f = e;
+            e = P0(TT2);
+        }
+        /* 64 rounds: 16..63 */
+        for (j = 16; j < 64; j++) {
+            uint32_t a12 = ROTL32(a, 12);
+            SS1 = ROTL32(a12 + e + sm3_Tj[j], 7);
+            SS2 = SS1 ^ a12;
+            TT1 = FF1(a, b, c) + d + SS2 + Wp[j];
+            TT2 = GG1(e, f, g) + h + SS1 + W[j];
             d = c;
             c = ROTL32(b, 9);
             b = a;
@@ -137,12 +165,8 @@ static size_t crypto_hashblocks_sm3(uint8_t *statebytes,
 }
 
 void sm3_inc_init(uint8_t *state) {
-    for (size_t i = 0; i < 32; ++i) {
-        state[i] = iv_sm3[i];
-    }
-    for (size_t i = 32; i < 40; ++i) {
-        state[i] = 0;
-    }
+    memcpy(state, iv_sm3, 32);
+    memset(state + 32, 0, 8);
 }
 
 void sm3_inc_blocks(uint8_t *state, const uint8_t *in, size_t inblocks) {
@@ -161,15 +185,11 @@ void sm3_inc_finalize(uint8_t *out, uint8_t *state, const uint8_t *in, size_t in
     inlen &= 63;
     in -= inlen;
 
-    for (size_t i = 0; i < inlen; ++i) {
-        padded[i] = in[i];
-    }
+    memcpy(padded, in, inlen);
     padded[inlen] = 0x80;
 
     if (inlen < 56) {
-        for (size_t i = inlen + 1; i < 56; ++i) {
-            padded[i] = 0;
-        }
+        memset(padded + inlen + 1, 0, 56 - (inlen + 1));
         padded[56] = (uint8_t)(bytes >> 53);
         padded[57] = (uint8_t)(bytes >> 45);
         padded[58] = (uint8_t)(bytes >> 37);
@@ -180,9 +200,7 @@ void sm3_inc_finalize(uint8_t *out, uint8_t *state, const uint8_t *in, size_t in
         padded[63] = (uint8_t)(bytes << 3);
         crypto_hashblocks_sm3(state, padded, 64);
     } else {
-        for (size_t i = inlen + 1; i < 120; ++i) {
-            padded[i] = 0;
-        }
+        memset(padded + inlen + 1, 0, 120 - (inlen + 1));
         padded[120] = (uint8_t)(bytes >> 53);
         padded[121] = (uint8_t)(bytes >> 45);
         padded[122] = (uint8_t)(bytes >> 37);
@@ -227,14 +245,9 @@ void mgf1_sm3(unsigned char *out, unsigned long outlen,
 
 void seed_state_sm3(spx_ctx *ctx) {
     uint8_t block[SPX_SM3_BLOCK_BYTES];
-    size_t i;
 
-    for (i = 0; i < SPX_N; ++i) {
-        block[i] = ctx->pub_seed[i];
-    }
-    for (i = SPX_N; i < SPX_SM3_BLOCK_BYTES; ++i) {
-        block[i] = 0;
-    }
+    memcpy(block, ctx->pub_seed, SPX_N);
+    memset(block + SPX_N, 0, SPX_SM3_BLOCK_BYTES - SPX_N);
 
     sm3_inc_init(ctx->state_seeded_sm3);
     sm3_inc_blocks(ctx->state_seeded_sm3, block, 1);

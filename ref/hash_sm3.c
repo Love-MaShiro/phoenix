@@ -57,7 +57,10 @@ void gen_message_random(unsigned char *R, const unsigned char *sk_prf,
 #endif
 
     /* This implements HMAC-SM3 */
-    for (i = 0; i < SPX_N; i++) {
+    for (i = 0; i < SPX_N / 4; i++) {
+        ((uint32_t *)buf)[i] = 0x36363636u ^ ((const uint32_t *)sk_prf)[i];
+    }
+    for (i = (SPX_N / 4) * 4; i < SPX_N; i++) {
         buf[i] = 0x36 ^ sk_prf[i];
     }
     memset(buf + SPX_N, 0x36, SPX_SM3_BLOCK_BYTES - SPX_N);
@@ -83,7 +86,10 @@ void gen_message_random(unsigned char *R, const unsigned char *sk_prf,
         sm3_inc_finalize(buf + SPX_SM3_BLOCK_BYTES, state, m, mlen);
     }
 
-    for (i = 0; i < SPX_N; i++) {
+    for (i = 0; i < SPX_N / 4; i++) {
+        ((uint32_t *)buf)[i] = 0x5c5c5c5cu ^ ((const uint32_t *)sk_prf)[i];
+    }
+    for (i = (SPX_N / 4) * 4; i < SPX_N; i++) {
         buf[i] = 0x5c ^ sk_prf[i];
     }
     memset(buf + SPX_N, 0x5c, SPX_SM3_BLOCK_BYTES - SPX_N);
@@ -199,8 +205,8 @@ int h2_generate_indices(uint32_t *indices,
         while (count < k) {
             if (rnd_ptr + 8 > sizeof(rnd)) return -1;
 
-            uint64_t val = 0;
-            for (int i = 0; i < 8; i++) val = (val << 8) | rnd[rnd_ptr++];
+            uint64_t val = bytes_to_ull(rnd + rnd_ptr, 8);
+            rnd_ptr += 8;
             uint32_t idx = val & ((1U << log2_kp) - 1);
             if (idx >= k_prime) continue;
 
@@ -218,8 +224,8 @@ int h2_generate_indices(uint32_t *indices,
         while (count < reject_num) {
             if (rnd_ptr + 8 > sizeof(rnd)) return -1;
 
-            uint64_t val = 0;
-            for (int i = 0; i < 8; i++) val = (val << 8) | rnd[rnd_ptr++];
+            uint64_t val = bytes_to_ull(rnd + rnd_ptr, 8);
+            rnd_ptr += 8;
             uint32_t idx = val & ((1U << log2_kp) - 1);
             if (idx >= k_prime) continue;
 

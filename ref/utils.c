@@ -38,7 +38,7 @@ unsigned long long bytes_to_ull(const unsigned char *in, unsigned int inlen)
     unsigned int i;
 
     for (i = 0; i < inlen; i++) {
-        retval |= ((unsigned long long)in[i]) << (8*(inlen - 1 - i));
+        retval = (retval << 8) | in[i];
     }
     return retval;
 }
