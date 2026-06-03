@@ -1,4 +1,4 @@
-PARAMS = phoenix-shake-256s
+PARAMS = phoenix-shake-128f
 THASH = simple
 
 CC=/usr/bin/gcc
@@ -18,6 +18,10 @@ endif
 ifneq (,$(findstring sha2,$(PARAMS)))
 	SOURCES += sha2.c hash_sha2.c thash_sha2_$(THASH).c
 	HEADERS += sha2.h
+	# Use SHA-512 for higher security levels (384, 512) since SHA-256 only outputs 32 bytes
+	ifneq (,$(or $(findstring 384,$(PARAMS)),$(findstring 512,$(PARAMS))))
+		CFLAGS += -DSPX_SHA512
+	endif
 endif
 ifneq (,$(findstring sm3,$(PARAMS)))
 	SOURCES += sm3.c hash_sm3.c thash_sm3_$(THASH).c

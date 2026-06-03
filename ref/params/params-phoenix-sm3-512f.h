@@ -99,6 +99,6 @@
 #define SPX_PK_BYTES (2 * SPX_N)
 #define SPX_SK_BYTES (2 * SPX_N + SPX_PK_BYTES)
 
-#include "../haraka_offsets.h"
+#include "../sm3_offsets.h"
 
 #endif

@@ -6,14 +6,14 @@
 /* Hash output length in bytes. */
 #define SPX_N 64
 /* Height of the hypertree. */
-#define SPX_FULL_HEIGHT 68
+#define SPX_FULL_HEIGHT 64
 /* Number of subtree layer. */
-#define SPX_D 17
+#define SPX_D 8
 /* TFORS tree dimensions. */
-#define SPX_TFORS_A 11
+#define SPX_TFORS_A 12
 #define SPX_TFORS_K_PRIME 64
 #define SPX_TFORS_LOG_K_PRIME 6
-#define SPX_TFORS_K 58
+#define SPX_TFORS_K 57
 #define SPX_TFORS_HEIGHT (SPX_TFORS_LOG_K_PRIME + SPX_TFORS_A)
 #define SPX_TFORS_T (1 << SPX_TFORS_A)
 /* Winternitz parameter, */
@@ -29,8 +29,8 @@
 #define SPX_ADDR_BYTES 32
 
 /* WOTS parameters. */
-#define SPX_WOTS_W1_LEN 4
-#define SPX_WOTS_W2_LEN 82
+#define SPX_WOTS_W1_LEN 94
+#define SPX_WOTS_W2_LEN 7
 #define SPX_WOTS_LEN1 (SPX_WOTS_W1_LEN + SPX_WOTS_W2_LEN)
 
 /* SPX_WOTS_LEN2 is fixed */
@@ -51,7 +51,7 @@
 #define SPX_TFORS_MSG_BYTES ((SPX_TFORS_A * SPX_TFORS_K + 7) / 8 + SPX_N)
 #define SPX_TFORS_BYTES (SPX_TFORS_K * SPX_N + \
                          SPX_TFORS_K * SPX_TFORS_HEIGHT * SPX_N)
-#define SPX_TFORS_SIG_MAX 39308
+#define SPX_TFORS_SIG_MAX 42054
 #define SPX_TFORS_PK_BYTES SPX_N
 
 /* custom upgrade parameter definitions */
@@ -60,8 +60,8 @@
 
 /* --- WOTS+C Automatic Parameter Calculation --- */
 /* Winternitz parameter for the single checksum chain */
-#define SPX_WOTS_CHECKSUM_W 16
-#define SPX_WOTS_CHECKSUM_LOGW 4
+#define SPX_WOTS_CHECKSUM_W 32
+#define SPX_WOTS_CHECKSUM_LOGW 5
 
 /*
  * Calculate the expected average sum (E) of the message chains.
@@ -99,6 +99,6 @@
 #define SPX_PK_BYTES (2 * SPX_N)
 #define SPX_SK_BYTES (2 * SPX_N + SPX_PK_BYTES)
 
-#include "../haraka_offsets.h"
+#include "../sm3_offsets.h"
 
 #endif
