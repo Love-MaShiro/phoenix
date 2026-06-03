@@ -10,17 +10,17 @@
 /* Number of subtree layer. */
 #define SPX_D 9
 /* TFORS tree dimensions. */
-#define SPX_TFORS_A 13
+#define SPX_TFORS_A 12
 #define SPX_TFORS_K_PRIME 32
 #define SPX_TFORS_LOG_K_PRIME 5
-#define SPX_TFORS_K 17
+#define SPX_TFORS_K 19
 #define SPX_TFORS_HEIGHT (SPX_TFORS_LOG_K_PRIME + SPX_TFORS_A)
 #define SPX_TFORS_T (1 << SPX_TFORS_A)
 /* Winternitz parameter, */
-#define SPX_WOTS_W1 8
-#define SPX_WOTS_LOGW1 3
-#define SPX_WOTS_W2 16
-#define SPX_WOTS_LOGW2 4
+#define SPX_WOTS_W1 64
+#define SPX_WOTS_LOGW1 6
+#define SPX_WOTS_W2 128
+#define SPX_WOTS_LOGW2 7
 
 /* The hash function is defined by linking a different hash.c file, as opposed
    to setting a #define constant. */
@@ -29,8 +29,8 @@
 #define SPX_ADDR_BYTES 32
 
 /* WOTS parameters. */
-#define SPX_WOTS_W1_LEN 36
-#define SPX_WOTS_W2_LEN 21
+#define SPX_WOTS_W1_LEN 11
+#define SPX_WOTS_W2_LEN 18
 #define SPX_WOTS_LEN1 (SPX_WOTS_W1_LEN + SPX_WOTS_W2_LEN)
 
 /* SPX_WOTS_LEN2 is fixed */
@@ -51,7 +51,7 @@
 #define SPX_TFORS_MSG_BYTES ((SPX_TFORS_A * SPX_TFORS_K + 7) / 8 + SPX_N)
 #define SPX_TFORS_BYTES (SPX_TFORS_K * SPX_N + \
                          SPX_TFORS_K * SPX_TFORS_HEIGHT * SPX_N)
-#define SPX_TFORS_SIG_MAX 5154
+#define SPX_TFORS_SIG_MAX 5274
 #define SPX_TFORS_PK_BYTES SPX_N
 
 /* custom upgrade parameter definitions */
