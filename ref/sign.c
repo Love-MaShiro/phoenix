@@ -18,7 +18,11 @@
 
 #define SPX_MAX_COUNTER 10000
 #define SPX_MAX_OPTRAND_TRIES 256
-#define SPX_MAX_MLEN 1024
+/* Max message length supported by the counter-based message hashing below.
+ * Must cover the NIST KAT harness, which signs messages up to 33*100 = 3300
+ * bytes (see PQCgenKAT_sign.c, msg[3300]). The previous value (1024) caused a
+ * stack-buffer-overflow in mtmp[] starting at KAT count 31 (mlen = 1056). */
+#define SPX_MAX_MLEN 3300
 
 /*
  * Returns the length of a secret key, in bytes
@@ -121,6 +125,14 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen, size_t *tfslen,
     uint32_t indices[SPX_TFORS_K];
     uint32_t wots_addr[8] = {0};
     uint32_t tree_addr[8] = {0};
+
+    /* Guard against mtmp[] stack-buffer-overflow: message + appended
+     * counter must fit in SPX_MAX_MLEN + COUNTER_SIZE bytes. */
+    if (mlen > SPX_MAX_MLEN) {
+        *siglen = 0;
+        *tfslen = 0;
+        return -1;
+    }
 
     memcpy(ctx.sk_seed, sk, SPX_N);
     memcpy(ctx.pub_seed, pk, SPX_N);
@@ -225,6 +237,11 @@ int crypto_sign_verify(const uint8_t *sig, size_t siglen, size_t tfors_siglen,
     uint32_t wots_addr[8] = {0};
     uint32_t tree_addr[8] = {0};
     uint32_t wots_pk_addr[8] = {0};
+
+    /* Guard against mtmp[] buffer-overflow (mirrors the signing side). */
+    if (mlen > SPX_MAX_MLEN) {
+        return -1;
+    }
 
     memcpy(ctx.pub_seed, pk, SPX_N);
 
@@ -331,7 +348,7 @@ int crypto_sign_open(unsigned char *m, unsigned long long *mlen, unsigned long l
  
 
     if (crypto_sign_verify(sm, (size_t)slen_tmp, (size_t)tfslen_tmp, sm + slen_tmp, (size_t)mlen_tmp, pk)) {
-        memset(m, 0, smlen);
+        memset(m, 0, mlen_tmp);
         *mlen = 0;
         return -1;
     }

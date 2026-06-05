@@ -1,0 +1,31 @@
+PASS         phoenix-sha2-128f simple  rsp=c435c214eedc19f7594a639fb9c6b3342a63204a76ddd558c922fbc118ab0315
+PASS         phoenix-sha2-128f robust  rsp=1982bc7a5ba4fdace52c5faba69c0f607cf59e14f3d26a723ae012cfed72af8d
+PASS         phoenix-sha2-192f simple  rsp=890e18a0fcba34125e905ea6f92ee7b38f5caf8877e3a4640c1b424070d2a091
+PASS         phoenix-sha2-192f robust  rsp=3e04066134383df4ac7569271ea356fa09564235f6c63d1c25038288644ad491
+PASS         phoenix-sha2-256f simple  rsp=cbc02da6c0ac26d0c40b50864c4c550287d628817d48f3c63d28e772dd4563bf
+PASS         phoenix-sha2-256f robust  rsp=4faf9b50eae5960a3826d1de7ae70012ac337be16fdfb7aa7b3ea126955f9d84
+PASS         phoenix-sha2-384f simple  rsp=01ab73d0b4c00e71f84ad6afaadba50a7ac0999d82fa98d338524f303dfbf5fc
+PASS         phoenix-sha2-384f robust  rsp=a5f27c600cbc3932d434880a466552dd699f7fd2563473aa8a891f8a6303913a
+PASS         phoenix-sha2-512f simple  rsp=4db18e76b74839b76c4b7c2668b3c9a1b8f10b3519c2828f81c6406c329fbbef
+PASS         phoenix-sha2-512f robust  rsp=2aacdcb10d4b1c9f62fab5617473fd284d6903a3a23e292ba305774d53f0c6fe
+PASS         phoenix-shake-128f simple  rsp=c195d41d8a191476675aebc4dc74375458c0869fdd3c6412a6c517c3f489ea3e
+PASS         phoenix-shake-128f robust  rsp=5b13b1c2bbd24fae999e04db0fc6cbee242d5ec8a85418876107e3342de9968b
+PASS         phoenix-shake-192f simple  rsp=841f6ee205abfc277afd083fc2df22a833dfcf17674ce5aff820d516f75bdedf
+PASS         phoenix-shake-192f robust  rsp=95ecf245efa03491a5848aa16147e872424dc2a0a4c3a90ebcbcb854ffacecaf
+PASS         phoenix-shake-256f simple  rsp=d34a99413afb8775a39a642b74e3b6f4426e973f19506abe80e215652eb704d9
+PASS         phoenix-shake-256f robust  rsp=81b385c3f011edfeb3ce2a691cb5f173d573164a23cbb64eb3185aa0e4195dec
+PASS         phoenix-shake-384f simple  rsp=192073c079c5c1240ff88fca0f6bbe7fade5cdaac7311799b70f355b171aa769
+PASS         phoenix-shake-384f robust  rsp=faca618a597f00546ff66f8ad4480dd005f5fad668e3686c67a7c95c5a4b90d3
+PASS         phoenix-shake-512f simple  rsp=114c82125b71bcfade757a06a75f8639366565be240b583caccea1bc7453d12a
+PASS         phoenix-shake-512f robust  rsp=86086e66682344c5a6466342adcb94fcf998f321f1fa39aaf138ed3fb637755c
+PASS         phoenix-sm3-128f simple  rsp=45084ea5bfe21011dff93e2103bf193770c1e5ce8be2e0f8a8f5812fe3e3099b
+PASS         phoenix-sm3-128f robust  rsp=31467b6894bdeed580d065bfc258151ba23c8cdf9bc4fa02341898ac1ea9b9b7
+PASS         phoenix-sm3-192f simple  rsp=2a3747bd98e8970f47b3372f6755675bd55fe2b6b37486dbcd0869d5df3ae211
+PASS         phoenix-sm3-192f robust  rsp=f22c7a2da5d06f23998b933fb916f32dff5c0039204bda431c63f5ead21f8c99
+PASS         phoenix-sm3-256f simple  rsp=f74bd15720f4743db9f3cc698a2f38d82c7fd9fdcc6ee2565992f658e66eaa0b
+PASS         phoenix-sm3-256f robust  rsp=d42009bb02289e3b7ada606fc6bf40b40f87db725b7b0fc3c318ab243a32f1cd
+KAT-FAIL(252) phoenix-sm3-384f simple
+KAT-FAIL(252) phoenix-sm3-384f robust
+KAT-FAIL(252) phoenix-sm3-512f simple
+KAT-FAIL(252) phoenix-sm3-512f robust
+=== TOTAL PASS=26 FAIL=4 ===
