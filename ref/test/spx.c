@@ -11,13 +11,8 @@
 
 int main(void)
 {
-    printf("===============================================================\n");
-    printf("Testing SPHINCS+ variant: %s\n", PARAMNAME);
-    printf("===============================================================\n");
     int ret = 0;
     int i;
-    int success_count = 0;
-    int fail_count = 0;
 
     /* Make stdout buffer more responsive. */
     setbuf(stdout, NULL);
@@ -32,6 +27,8 @@ int main(void)
     unsigned long long tfslen;
     unsigned long long mlen;
 
+    randombytes(m, SPX_MLEN);
+
     printf("Generating keypair.. ");
 
     if (crypto_sign_keypair(pk, sk)) {
@@ -43,15 +40,8 @@ int main(void)
     printf("Testing %d signatures with different messages.. \n", SPX_SIGNATURES);
 
     for (i = 0; i < SPX_SIGNATURES; i++) {
-        // 每次循环生成新的随机消息
-        randombytes(m, SPX_MLEN);
         
         printf("\n  - iteration #%d:\n", i);
-        printf("    Message: ");
-        for (int j = 0; j < SPX_MLEN; j++) {
-            printf("%02x", m[j]);
-        }
-        printf("\n");
 
         crypto_sign(sm, &smlen, &slen, &tfslen, m, SPX_MLEN, sk);
         unsigned long long slen_tmp = slen;
@@ -62,11 +52,9 @@ int main(void)
         /* Test if signature is valid. */
         if (crypto_sign_open(mout, &mlen, &slen_tmp, &tfslen_tmp, sm, smlen, pk)) {
             printf("    X verification failed!\n");
-            fail_count++;
             ret = -1;
         } else {
             printf("    verification succeeded.\n");
-            success_count++;
         }
 
         /* Test if the correct message was recovered. */
@@ -106,18 +94,7 @@ int main(void)
         }
         sm[smlen - 1] ^= 1;
 
-        // 每10次打印进度
-        if ((i + 1) % 10 == 0) {
-            printf("\n  Progress: %d/%d signatures completed\n", i + 1, SPX_SIGNATURES);
-        }
     }
-
-    // 打印统计结果
-    printf("\n=== Final Results ===\n");
-    printf("Total signatures: %d\n", SPX_SIGNATURES);
-    printf("Successful: %d\n", success_count);
-    printf("Failed: %d\n", fail_count);
-    printf("Success rate: %.2f%%\n", (float)success_count / SPX_SIGNATURES * 100);
 
     free(m);
     free(sm);

@@ -11,17 +11,6 @@
 #include "address.h"
 #include "octopus.h"
 
-// 打印uint32_t[8]类型的SPX地址
-static void print_spx_addr(const char *name, const uint32_t addr[8])
-{
-    printf("=== %s ===\n", name);
-    for (int i = 0; i < 8; i++) {
-        // 十六进制打印（8位宽度，补0），同时打印十进制（可选）
-        printf("addr[%d] = 0x%08x (dec: %u)\n", i, addr[i], addr[i]);
-    }
-    printf("===========\n\n");
-}
-
 static void tfors_gen_sk(unsigned char *sk, const spx_ctx *ctx,
                         uint32_t tfors_leaf_addr[8])
 {
@@ -43,13 +32,13 @@ struct tfors_gen_leaf_info {
 static void sort_indices(uint32_t *indices)
 {
     for (uint32_t i = 1; i < SPX_TFORS_K; i++) {
-        uint32_t key = indices[i];
+        uint32_t idx = indices[i];
         int j = i - 1;
-        while (j >= 0 && indices[j] > key) {
+        while (j >= 0 && indices[j] > idx) {
             indices[j + 1] = indices[j];
             j--;
         }
-        indices[j + 1] = key;
+        indices[j + 1] = idx;
     }
 }
 
@@ -72,19 +61,13 @@ void message_to_indices(uint32_t *indices, const unsigned char *m, const spx_ctx
     h2_generate_indices(indices1, m, ctx);
     
     /* Extract indices2 from the remaining bits (after SPX_N bytes) */
-    unsigned int start_bit = SPX_N * 8;
-    unsigned int bit_offset = start_bit;
+    unsigned int offset = 0;
     
     for (i = 0; i < SPX_TFORS_K; i++) {
         indices2[i] = 0;
         for (j = 0; j < SPX_TFORS_A; j++) {
-            unsigned int byte_pos = bit_offset >> 3;
-            unsigned int bit_in_byte = bit_offset & 0x7;
-            
-            // indices2[i] ^= ((m[byte_pos] >> bit_in_byte) & 1u) << (unsigned int)j;
-            indices2[i] |= ((m[byte_pos] >> bit_in_byte) & 1u) << (unsigned int)j;
-
-            bit_offset++;
+            indices2[i] |= ((m[offset >> 3] >> (offset & 0x7)) & 1u) << (unsigned int)j;
+            offset++;
         }
     }
 
@@ -106,22 +89,20 @@ void tfors_sign(unsigned char *sig, unsigned char *pk,
                const uint32_t tfors_addr[8])
 {
     uint32_t indices_tmp[SPX_TFORS_K];
-    octopus_auth_with_hash auth;
     uint32_t tfors_tree_addr[8] = {0};
     struct tfors_gen_leaf_info fors_info = {0};
     uint32_t *tfors_leaf_addr = fors_info.leaf_addrx;
     unsigned char leaf_sk[SPX_TFORS_K][SPX_N];
     unsigned int i;
-
-    memcpy(indices_tmp, indices, SPX_TFORS_K * sizeof(uint32_t));
+    octopus_auth_with_hash auth;
 
     copy_keypair_addr(tfors_tree_addr, tfors_addr);
     copy_keypair_addr(tfors_leaf_addr, tfors_addr);
+    set_tree_height(tfors_tree_addr, 0);
 
-    // 生成叶子私钥
+    // generate leaf sks
     for (i = 0; i < SPX_TFORS_K; i++) {
-        set_tree_height(tfors_tree_addr, 0);
-        set_tree_index(tfors_tree_addr, indices_tmp[i]);
+        set_tree_index(tfors_tree_addr, indices[i]);
         set_type(tfors_tree_addr, SPX_ADDR_TYPE_TFORSPRF);
 
         /* Include the secret key part that produces the selected leaf node. */
@@ -131,14 +112,9 @@ void tfors_sign(unsigned char *sig, unsigned char *pk,
         sig += SPX_N;
     }
     
-    // 计算认证路径
-    octopus_compute_auth_paths(pk, &auth, indices_tmp, SPX_TFORS_K, leaf_sk, ctx, tfors_tree_addr);
-
-    // 写入认证路径
-    for (uint32_t i = 0; i < auth.count; i++) {
-        memcpy(sig, auth.entries[i].hash, SPX_N);
-        sig += SPX_N;
-    }
+    // generate auth paths and write auth paths to signature
+    // octopus_compute_auth_paths(pk, sig, indices, SPX_TFORS_K, leaf_sk, ctx, tfors_tree_addr);
+    octopus_compute_auth_paths(pk, sig, indices, SPX_TFORS_K, leaf_sk, ctx, tfors_tree_addr);
 }
 
 void tfors_pk_from_sig(unsigned char *pk,
@@ -149,32 +125,22 @@ void tfors_pk_from_sig(unsigned char *pk,
     uint32_t indices[SPX_TFORS_K];
     octopus_auth_with_hash auth;
     unsigned char leaf[SPX_TFORS_K][SPX_N];
-    uint32_t tfors_tree_addr[8] = {0};
-    unsigned int i;
+    uint32_t tfors_leaf_addr[8] = {0};
 
-    // memcpy(ctx->pub_seed, pk, SPX_N);
-
-    copy_keypair_addr(tfors_tree_addr, tfors_addr);
-
-    set_type(tfors_tree_addr, SPX_ADDR_TYPE_TFORSTREE);
+    copy_keypair_addr(tfors_leaf_addr, tfors_addr);
+    set_type(tfors_leaf_addr, SPX_ADDR_TYPE_TFORSTREE);
+    set_tree_height(tfors_leaf_addr, 0);
 
     message_to_indices(indices, m, ctx);
 
-    // 恢复叶子哈希
-    for ( i = 0; i < SPX_TFORS_K; i++) {
-        uint32_t tfors_leaf_addr[8] = {0};
-        copy_keypair_addr(tfors_leaf_addr, tfors_addr);
-        set_type(tfors_leaf_addr, SPX_ADDR_TYPE_TFORSTREE);
-        set_tree_height(tfors_leaf_addr, 0);
-        set_tree_index(tfors_leaf_addr, indices[i]);
-        // print_spx_addr("fors_leaf_addr (initial)", tfors_leaf_addr);
-        
+    // generate leaf hashes
+    for (uint32_t i = 0; i < SPX_TFORS_K; i++) {
+        set_tree_index(tfors_leaf_addr, indices[i]);        
         tfors_sk_to_leaf(leaf[i], sig, ctx, tfors_leaf_addr);
-
         sig += SPX_N;
     }
 
-    // 读取认证路径
+    // generate auth indices
     octopus_auth auth_indices;
     octopus_compute(&auth_indices, indices);
     auth.count = auth_indices.count;
@@ -186,8 +152,8 @@ void tfors_pk_from_sig(unsigned char *pk,
         sig += SPX_N;
     }
 
-    // 重建根
+    // recompute root
     octopus_recompute_root(pk, indices, SPX_TFORS_K, &auth,
                           (const unsigned char*)leaf,
-                          ctx, tfors_tree_addr);
+                          ctx, tfors_leaf_addr);
 }
