@@ -4,8 +4,8 @@
 #include <string.h>
 
 #include "tfors.h"
-#include "utils.h"
-#include "utilsx1.h"
+// #include "utils.h"
+// #include "utilsx1.h"
 #include "hash.h"
 #include "thash.h"
 #include "address.h"
@@ -69,10 +69,6 @@ void message_to_indices(uint32_t *indices, const unsigned char *m, const spx_ctx
             indices2[i] |= ((m[offset >> 3] >> (offset & 0x7)) & 1u) << (unsigned int)j;
             offset++;
         }
-    }
-
-    /* Compute final leaf indices from combined indices */
-    for (i = 0; i < SPX_TFORS_K; i++) {
         indices[i] = indices1[i] + SPX_TFORS_K_PRIME * indices2[i];
     }
 
@@ -88,20 +84,15 @@ void tfors_sign(unsigned char *sig, unsigned char *pk,
                const spx_ctx *ctx,
                const uint32_t tfors_addr[8])
 {
-    uint32_t indices_tmp[SPX_TFORS_K];
     uint32_t tfors_tree_addr[8] = {0};
-    struct tfors_gen_leaf_info fors_info = {0};
-    uint32_t *tfors_leaf_addr = fors_info.leaf_addrx;
     unsigned char leaf_sk[SPX_TFORS_K][SPX_N];
     unsigned int i;
-    octopus_auth_with_hash auth;
 
     copy_keypair_addr(tfors_tree_addr, tfors_addr);
-    copy_keypair_addr(tfors_leaf_addr, tfors_addr);
-    set_tree_height(tfors_tree_addr, 0);
 
-    // generate leaf sks
+    // generate leaf keys
     for (i = 0; i < SPX_TFORS_K; i++) {
+        set_tree_height(tfors_tree_addr, 0);
         set_tree_index(tfors_tree_addr, indices[i]);
         set_type(tfors_tree_addr, SPX_ADDR_TYPE_TFORSPRF);
 
@@ -112,9 +103,8 @@ void tfors_sign(unsigned char *sig, unsigned char *pk,
         sig += SPX_N;
     }
     
-    // generate auth paths and write auth paths to signature
-    // octopus_compute_auth_paths(pk, sig, indices, SPX_TFORS_K, leaf_sk, ctx, tfors_tree_addr);
-    octopus_compute_auth_paths(pk, sig, indices, SPX_TFORS_K, leaf_sk, ctx, tfors_tree_addr);
+    // generate auth paths
+    octopus_compute_auth_paths(pk, sig, indices, ctx, tfors_tree_addr);
 }
 
 void tfors_pk_from_sig(unsigned char *pk,
@@ -123,9 +113,9 @@ void tfors_pk_from_sig(unsigned char *pk,
                       const uint32_t tfors_addr[8])
 {
     uint32_t indices[SPX_TFORS_K];
-    octopus_auth_with_hash auth;
     unsigned char leaf[SPX_TFORS_K][SPX_N];
     uint32_t tfors_leaf_addr[8] = {0};
+    const unsigned char *sig_ptr = sig;
 
     copy_keypair_addr(tfors_leaf_addr, tfors_addr);
     set_type(tfors_leaf_addr, SPX_ADDR_TYPE_TFORSTREE);
@@ -136,24 +126,14 @@ void tfors_pk_from_sig(unsigned char *pk,
     // generate leaf hashes
     for (uint32_t i = 0; i < SPX_TFORS_K; i++) {
         set_tree_index(tfors_leaf_addr, indices[i]);        
-        tfors_sk_to_leaf(leaf[i], sig, ctx, tfors_leaf_addr);
-        sig += SPX_N;
+        tfors_sk_to_leaf(leaf[i], sig_ptr, ctx, tfors_leaf_addr);
+        sig_ptr += SPX_N;
     }
 
     // generate auth indices
-    octopus_auth auth_indices;
-    octopus_compute(&auth_indices, indices);
-    auth.count = auth_indices.count;
-    
-    for (uint32_t i = 0; i < auth.count; i++) {
-        auth.entries[i].level = auth_indices.entries[i].level;
-        auth.entries[i].index = auth_indices.entries[i].index;
-        memcpy(auth.entries[i].hash, sig, SPX_N);
-        sig += SPX_N;
-    }
-
-    // recompute root
-    octopus_recompute_root(pk, indices, SPX_TFORS_K, &auth,
+    octopus_auth auth;
+    octopus_compute(&auth, indices);
+    octopus_recompute_root(pk, sig_ptr, indices, SPX_TFORS_K, &auth,
                           (const unsigned char*)leaf,
                           ctx, tfors_leaf_addr);
 }

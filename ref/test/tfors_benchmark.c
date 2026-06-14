@@ -154,6 +154,6 @@ int main(void)
     MEASURE("TFORS verification..    ", 1, 
             tfors_pk_from_sig(tfors_pk, tfors_sig, tfors_m, &ctx, tfors_addr), 
             "TFORS Verification");
-    
+
     return 0;
 }

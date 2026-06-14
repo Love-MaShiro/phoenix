@@ -37,7 +37,7 @@ int main(void)
     }
     printf("successful.\n");
 
-    printf("Testing %d signatures with different messages.. \n", SPX_SIGNATURES);
+    printf("Testing %d signatures with the same messages.. \n", SPX_SIGNATURES);
 
     for (i = 0; i < SPX_SIGNATURES; i++) {
         

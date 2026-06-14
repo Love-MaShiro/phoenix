@@ -1,4 +1,4 @@
-PARAMS = phoenix-shake-128f
+PARAMS = phoenix-sm3-384f
 THASH = simple
 
 CC=/usr/bin/gcc

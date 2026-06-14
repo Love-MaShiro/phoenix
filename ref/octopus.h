@@ -12,7 +12,7 @@
 typedef struct {
         uint32_t index;
         unsigned char hash[SPX_N];
-} node_entry;
+    } node_entry;
 
 // Octopus authentication entry (only indices)
 typedef struct {
@@ -26,19 +26,6 @@ typedef struct {
     uint32_t count;
 } octopus_auth;
 
-// Octopus authentication entry (with hash)
-typedef struct {
-    uint32_t level;
-    uint32_t index;
-    unsigned char hash[SPX_N];
-} octopus_entry_with_hash;
-
-// Octopus authentication structure (with hash)
-typedef struct {
-    octopus_entry_with_hash entries[SPX_TFORS_K * SPX_TFORS_HEIGHT];
-    uint32_t count;
-} octopus_auth_with_hash;
-
 void octopus_compute_auth_count(const uint32_t *indices, uint32_t len, uint32_t *auth_count);
 
 // generate auth indices
@@ -49,17 +36,15 @@ void octopus_compute(octopus_auth *auth,
 void octopus_compute_auth_paths(unsigned char root[SPX_N],
                                 unsigned char *sig,
                                 const uint32_t *indices,
-                                uint32_t leaf_count,
-                                const unsigned char leaf_sk[][SPX_N],  // 新增：叶子私钥数组
                                 const spx_ctx *ctx,
                                 uint32_t tree_addr[8]);
-                                // octopus.h
 
 // recompute root from auth paths
 void octopus_recompute_root(unsigned char root[SPX_N],
+                           const unsigned char *sig,
                            const uint32_t *indices,
                            uint32_t leaf_count,
-                           const octopus_auth_with_hash *auth,
+                           const octopus_auth *auth,
                            const unsigned char *leaf_hashes,
                            const spx_ctx *ctx,
                            uint32_t tree_addr[8]);
