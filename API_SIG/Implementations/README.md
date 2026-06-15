@@ -56,7 +56,8 @@ Implementations/
 
 ### Additional_Implementation/
 Reserved for additional implementations such as hardware-specific optimizations,
-alternative cryptographic primitives, or specialized deployments.
+alternative cryptographic primitives, or specialized deployments. This directory
+currently contains only a placeholder file.
 
 ### Optimized_Implementation/
 Contains performance-optimized implementations of Phoenix signature algorithm instances.
@@ -107,6 +108,55 @@ Each algorithm instance follows the naming convention:
 | Phoenix-SM3-512f | 512 bits | SM3 | Fast |
 | Phoenix-SM3-512s | 512 bits | SM3 | Small |
 
+## File Descriptions
+
+Each algorithm instance directory contains the following files:
+
+### Core Implementation Files
+- **api.h** - Public API header with signature/verify function declarations
+- **sign.c** - Signature generation implementation
+- **SIG_AlgorithmInstance.c** - Algorithm instance-specific implementation
+- **SIG_AlgorithmInstance.h** - Algorithm instance header
+
+### Cryptographic Components
+- **address.c/h** - Address management for tree nodes
+- **auxfunc.c/h** - Auxiliary functions
+- **hash.c/h** - Hash function wrappers
+- **merkle.c/h** - Merkle tree operations
+- **octopus.c/h** - Octopus transformation
+- **tfors.c/h** - TFORS transformation
+- **wots.c/h** - WOTS+ signature scheme
+- **wotsx1.c/h** - Single-threaded WOTS+ operations
+
+### Utility Functions
+- **utils.c/h** - General utility functions
+- **utilsx1.c/h** - Single-threaded utility functions
+
+### Configuration
+- **params.h** - Parameter definitions
+- **params/params-phoenix-*.h** - Instance-specific parameters
+- **Makefile** - Build configuration
+
+### Testing
+- **KAT_SIG.c** - Known Answer Test generation
+- **KAT_SIG** - Pre-generated KAT vectors
+
+### Documentation
+- **README.md** - Instance-specific documentation
+- **MODIFICATION_NOTES.md** - Implementation modification notes
+
+### AVX2-Specific Files (Optimized Implementation)
+- **sm3_avx2.c** - AVX2-optimized SM3 hash implementation
+- **sm3_x8.c** - 8-way parallel SM3 interface
+- **sm3_x4.c** - 4-way parallel SM3 interface (for NEON compatibility)
+- **sm3_neon.c** - NEON-optimized SM3 hash implementation
+- **sm3_scalar.c** - Scalar SM3 implementation (fallback)
+- **hash_sm3x8.c** - 8-way parallel hash operations
+- **thash_sm3_simplex8.c** - 8-way parallel tree hash operations
+- **utilsx8.c/h** - 8-way parallel utility functions
+- **hashx8.h** - 8-way parallel hash header
+- **thashx8.h** - 8-way parallel tree hash header
+
 ## Building and Testing
 
 Each algorithm instance directory contains its own Makefile. To build and generate KAT vectors:
@@ -126,3 +176,9 @@ make kat
 ## Test Vectors
 
 Test vectors for all algorithm instances are located in the `../Test_Vectors/` directory.
+
+## References
+
+- Phoenix Signature Scheme Specification
+- SHAKE256 (FIPS 202)
+- SM3 (GB/T 32905-2016)
