@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "utils.h"
+#include "auxfunc.h"
 #include "hash_sm3.h"
 
 /* SM3 (GM/T 0004-2012) hash function implementation.
@@ -225,22 +226,8 @@ void sm3(uint8_t *out, const uint8_t *in, size_t inlen) {
 
 void mgf1_sm3(unsigned char *out, unsigned long outlen,
               const unsigned char *in, unsigned long inlen) {
-    SPX_VLA(uint8_t, inbuf, inlen + 4);
-    unsigned char outbuf[SPX_SM3_OUTPUT_BYTES];
-    unsigned long i;
-
-    memcpy(inbuf, in, inlen);
-
-    for (i = 0; (i + 1) * SPX_SM3_OUTPUT_BYTES <= outlen; i++) {
-        u32_to_bytes(inbuf + inlen, (uint32_t)i);
-        sm3(out, inbuf, inlen + 4);
-        out += SPX_SM3_OUTPUT_BYTES;
-    }
-    if (outlen > i * SPX_SM3_OUTPUT_BYTES) {
-        u32_to_bytes(inbuf + inlen, (uint32_t)i);
-        sm3(outbuf, inbuf, inlen + 4);
-        memcpy(out, outbuf, outlen - i * SPX_SM3_OUTPUT_BYTES);
-    }
+    /* Use pseudoXOF from auxfunc.c for arbitrary length output (supports any length) */
+    pseudoXOF(outlen * 8, in, inlen * 8, out);
 }
 
 void seed_state_sm3(spx_ctx *ctx) {
