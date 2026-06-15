@@ -7,6 +7,7 @@ CFLAGS += -DPARAMS=$(PARAMS) -DPARAMNAME=\"$(ALGORITHM_INSTANCE)\" -I. -DALLOW_D
 
 CORE_SOURCES = \
 	address.c \
+	auxfunc.c \
 	counter.c \
 	hash_sm3.c sm3_drng.c \
 	 \
