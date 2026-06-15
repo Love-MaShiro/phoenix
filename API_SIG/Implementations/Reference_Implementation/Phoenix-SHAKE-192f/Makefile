@@ -2,14 +2,14 @@ ALGORITHM_INSTANCE = Phoenix-SHAKE-192f
 PARAMS = phoenix-shake-192f
 
 CC ?= gcc
-CFLAGS ?= -O3 -std=c99 -Wno-nullability-completeness -Wno-nullability-extension -Wno-newline-eof -Wno-sign-conversion
-CFLAGS += -DPARAMS=$(PARAMS) -DPARAMNAME=\"$(ALGORITHM_INSTANCE)\" -I. -DALLOW_DEEP_TREES -DSUBMISSION_DRNG
+CFLAGS ?= -O3 -std=c99
+CFLAGS += -DPARAMS=$(PARAMS) -I. -DALLOW_DEEP_TREES -DSUBMISSION_DRNG
 
 CORE_SOURCES = \
 	address.c \
+	auxfunc.c \
 	counter.c \
-	fips202.c \
-	hash_shake.c \
+	hash_shake.c fips202.c \
 	merkle.c \
 	octopus.c \
 	randombytes.c \
@@ -26,7 +26,7 @@ SUBMISSION_SOURCES = \
 	drng.c \
 	KAT_SIG.c
 
-.PHONY: all clean kat
+.PHONY: all clean kat benchmark
 
 all: KAT_SIG
 
@@ -34,8 +34,12 @@ kat: KAT_SIG
 	./KAT_SIG
 
 KAT_SIG: $(CORE_SOURCES) $(SUBMISSION_SOURCES) SIG_AlgorithmInstance.h drng.h
-	$(CC) $(CFLAGS) -o $@ $(CORE_SOURCES) $(SUBMISSION_SOURCES)
+	$(CC) $(CFLAGS) -DPARAMNAME=\"$(ALGORITHM_INSTANCE)\" -o $@ $(CORE_SOURCES) $(SUBMISSION_SOURCES)
+
+benchmark: $(CORE_SOURCES) test/benchmark.c test/cycles.c
+	$(CC) $(CFLAGS) -U SUBMISSION_DRNG -DPARAMNAME=\"$(ALGORITHM_INSTANCE)\" -o $@ $(CORE_SOURCES) test/benchmark.c test/cycles.c
 
 clean:
 	$(RM) KAT_SIG
+	$(RM) benchmark
 	$(RM) -r output
