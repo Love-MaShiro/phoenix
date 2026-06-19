@@ -7,7 +7,6 @@ CFLAGS += -DPARAMS=$(PARAMS) -I. -DALLOW_DEEP_TREES -DSUBMISSION_DRNG
 
 CORE_SOURCES = \
 	address.c \
-	auxfunc.c \
 	counter.c \
 	hash_shake.c fips202.c \
 	merkle.c \
