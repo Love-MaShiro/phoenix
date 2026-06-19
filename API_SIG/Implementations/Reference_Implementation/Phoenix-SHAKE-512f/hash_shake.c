@@ -10,29 +10,21 @@
 
 void initialize_hash_function(spx_ctx* ctx)
 {
-    shake256_inc_init(ctx->state_seeded_shake);
-    shake256_inc_absorb(ctx->state_seeded_shake, ctx->pub_seed, SPX_N);
+    (void)ctx;
 }
 
-/*
- * Computes PRF(pk_seed, sk_seed, addr)
- */
 void prf_addr(unsigned char *out, const spx_ctx *ctx,
               const uint32_t addr[8])
 {
-    uint64_t state[26];
+    unsigned char buf[2*SPX_N + SPX_ADDR_BYTES];
 
-    memcpy(state, ctx->state_seeded_shake, sizeof(state));
-    shake256_inc_absorb(state, (const unsigned char *)addr, SPX_ADDR_BYTES);
-    shake256_inc_absorb(state, ctx->sk_seed, SPX_N);
-    shake256_inc_finalize(state);
-    shake256_inc_squeeze(out, SPX_N, state);
+    memcpy(buf, ctx->pub_seed, SPX_N);
+    memcpy(buf + SPX_N, addr, SPX_ADDR_BYTES);
+    memcpy(buf + SPX_N + SPX_ADDR_BYTES, ctx->sk_seed, SPX_N);
+
+    shake256(out, SPX_N, buf, 2*SPX_N + SPX_ADDR_BYTES);
 }
 
-/**
- * Computes the message-dependent randomness R, using a secret seed and an
- * optional randomization value as well as the message.
- */
 void gen_message_random(unsigned char *R, const unsigned char *sk_prf,
                         const unsigned char *optrand,
                         const unsigned char *m, unsigned long long mlen,
@@ -49,11 +41,6 @@ void gen_message_random(unsigned char *R, const unsigned char *sk_prf,
     shake256_inc_squeeze(R, SPX_N, s_inc);
 }
 
-/**
- * Computes the message hash using R, the public key, and the message.
- * Outputs the message digest and the index of the leaf. The index is split in
- * the tree index and the leaf index, for convenient copying to an address.
- */
 void hash_message(unsigned char *digest, uint64_t *tree, uint32_t *leaf_idx,
                   const unsigned char *R, const unsigned char *pk,
                   const unsigned char *m, unsigned long long mlen,
@@ -157,7 +144,6 @@ int SPX_h2_generate_indices(uint32_t *indices,
         }
     }
 
-    // 排序
     for (uint32_t i = 0; i < k; i++) {
         for (uint32_t j = i + 1; j < k; j++) {
             if (indices[i] > indices[j]) {
