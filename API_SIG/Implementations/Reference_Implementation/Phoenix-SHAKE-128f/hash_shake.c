@@ -10,7 +10,8 @@
 
 void initialize_hash_function(spx_ctx* ctx)
 {
-    (void)ctx;
+    shake256_inc_init(ctx->state_seeded_shake);
+    shake256_inc_absorb(ctx->state_seeded_shake, ctx->pub_seed, SPX_N);
 }
 
 void prf_addr(unsigned char *out, const spx_ctx *ctx,

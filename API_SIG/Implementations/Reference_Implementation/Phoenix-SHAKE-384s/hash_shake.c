@@ -10,7 +10,8 @@
 
 void initialize_hash_function(spx_ctx* ctx)
 {
-    (void)ctx;
+    shake256_inc_init(ctx->state_seeded_shake);
+    shake256_inc_absorb(ctx->state_seeded_shake, ctx->pub_seed, SPX_N);
 }
 
 void prf_addr(unsigned char *out, const spx_ctx *ctx,
@@ -30,7 +31,8 @@ void gen_message_random(unsigned char *R, const unsigned char *sk_prf,
                         const unsigned char *m, unsigned long long mlen,
                         const spx_ctx *ctx)
 {
-    (void)ctx;
+    shake256_inc_init(ctx->state_seeded_shake);
+    shake256_inc_absorb(ctx->state_seeded_shake, ctx->pub_seed, SPX_N);
     uint64_t s_inc[26];
 
     shake256_inc_init(s_inc);
@@ -46,7 +48,8 @@ void hash_message(unsigned char *digest, uint64_t *tree, uint32_t *leaf_idx,
                   const unsigned char *m, unsigned long long mlen,
                   const spx_ctx *ctx)
 {
-    (void)ctx;
+    shake256_inc_init(ctx->state_seeded_shake);
+    shake256_inc_absorb(ctx->state_seeded_shake, ctx->pub_seed, SPX_N);
 #define SPX_TREE_BITS (SPX_TREE_HEIGHT * (SPX_D - 1))
 #define SPX_TREE_BYTES ((SPX_TREE_BITS + 7) / 8)
 #define SPX_LEAF_BITS SPX_TREE_HEIGHT
