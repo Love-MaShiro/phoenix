@@ -23,3 +23,7 @@ PQCsignKAT_*.req
 # Common compiler byproducts
 *.o
 *.o.d
+
+# Engineer documents
+.aone_copilot
+openspec
