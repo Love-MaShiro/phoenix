@@ -2,9 +2,9 @@
 #include <string.h>
 
 #include "utils.h"
-#include "utilsx1.h"
+#include "utilsx4.h"
 #include "wots.h"
-#include "wotsx1.h"
+#include "wotsx4.h"
 #include "thash.h"
 #include "merkle.h"
 #include "address.h"
@@ -23,9 +23,11 @@ void merkle_sign(uint8_t *sig, unsigned char *root,
 {
 #define MAX_HASH_TRIALS_WOTS (1 << (20))
     unsigned char *auth_path = sig + SPX_WOTS_BYTES;
-    struct leaf_info_x1 info = {0};
+    struct leaf_info_x4 info = {0};
+    uint32_t tree_addrx4[4*8] = {0};
     unsigned steps[SPX_WOTS_LEN];
     unsigned char bitmask[SPX_N];
+    int j;
 
     /*Initial paramaters for custom thash & counter search*/
     unsigned char digest[SPX_N];
@@ -33,17 +35,22 @@ void merkle_sign(uint8_t *sig, unsigned char *root,
     int csum;
     uint32_t to_sign = ~0;
 
-    /*Initialize parameters for actual sign*/
+    /*Initialize x4 address structures for treehashx4*/
     set_type(&tree_addr[0], SPX_ADDR_TYPE_HASHTREE);
-    set_type(&info.pk_addr[0], SPX_ADDR_TYPE_WOTSPK);
-    copy_subtree_addr(&info.leaf_addr[0], wots_addr);
-    copy_subtree_addr(&info.pk_addr[0], wots_addr);
+    for (j = 0; j < 4; j++) {
+        set_type(&tree_addrx4[8*j], SPX_ADDR_TYPE_HASHTREE);
+        set_type(&info.leaf_addr[8*j], SPX_ADDR_TYPE_WOTS);
+        set_type(&info.pk_addr[8*j], SPX_ADDR_TYPE_WOTSPK);
+        copy_subtree_addr(&tree_addrx4[8*j], tree_addr);
+        copy_subtree_addr(&info.leaf_addr[8*j], wots_addr);
+        copy_subtree_addr(&info.pk_addr[8*j], wots_addr);
+    }
 
     /* Code for counter search */
     *counter_out = 0;
     if (idx_leaf != to_sign)
     {
-        /*Set thash address for custom hash*/
+        /*Set thash address for custom hash - use the first pk_addr for counter search*/
         uint32_t *pk_addr = info.pk_addr;
         set_keypair_addr(pk_addr, idx_leaf);
         set_type(pk_addr, SPX_ADDR_TYPE_COMPRESS_WOTS);
@@ -88,11 +95,11 @@ void merkle_sign(uint8_t *sig, unsigned char *root,
 
     info.wots_sign_leaf = idx_leaf;
 
-    treehashx1(root, auth_path, ctx,
+    treehashx4(root, auth_path, ctx,
                idx_leaf, 0,
                SPX_TREE_HEIGHT,
-               wots_gen_leafx1,
-               tree_addr, &info);
+               wots_gen_leafx4,
+               tree_addrx4, &info);
 }
 
 /* Compute root node of the top-most subtree. */

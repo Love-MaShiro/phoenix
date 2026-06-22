@@ -6,21 +6,19 @@
 /* Hash output length in bytes. */
 #define SPX_N 16
 /* Height of the hypertree. */
-#define SPX_FULL_HEIGHT 68
+#define SPX_FULL_HEIGHT 66
 /* Number of subtree layer. */
-#define SPX_D 17
+#define SPX_D 22
 /* TFORS tree dimensions. */
 #define SPX_TFORS_A 7
 #define SPX_TFORS_K_PRIME 32
 #define SPX_TFORS_LOG_K_PRIME 5
-#define SPX_TFORS_K 19
+#define SPX_TFORS_K 22
 #define SPX_TFORS_HEIGHT (SPX_TFORS_LOG_K_PRIME + SPX_TFORS_A)
 #define SPX_TFORS_T (1 << SPX_TFORS_A)
 /* Winternitz parameter, */
-#define SPX_WOTS_W1 8
-#define SPX_WOTS_LOGW1 3
-#define SPX_WOTS_W2 16
-#define SPX_WOTS_LOGW2 4
+#define SPX_WOTS_W1 16
+#define SPX_WOTS_W2 32
 
 /* The hash function is defined by linking a different hash.c file, as opposed
    to setting a #define constant. */
@@ -29,8 +27,24 @@
 #define SPX_ADDR_BYTES 32
 
 /* WOTS parameters. */
-#define SPX_WOTS_W1_LEN 20
-#define SPX_WOTS_W2_LEN 17
+#if SPX_WOTS_W1 == 256
+#define SPX_WOTS_LOGW1 8
+#elif SPX_WOTS_W1 == 16
+#define SPX_WOTS_LOGW1 4
+#else
+#error SPX_WOTS_W1 assumed 16 or 256
+#endif
+
+#if SPX_WOTS_W2 == 32
+#define SPX_WOTS_LOGW2 5
+#elif SPX_WOTS_W2 == 512
+#define SPX_WOTS_LOGW2 9
+#else
+#error SPX_WOTS_W2 assumed 32 or 512
+#endif
+
+#define SPX_WOTS_W1_LEN 12
+#define SPX_WOTS_W2_LEN 16
 #define SPX_WOTS_LEN1 (SPX_WOTS_W1_LEN + SPX_WOTS_W2_LEN)
 
 /* SPX_WOTS_LEN2 is fixed */
@@ -51,7 +65,7 @@
 #define SPX_TFORS_MSG_BYTES ((SPX_TFORS_A * SPX_TFORS_K + 7) / 8 + SPX_N)
 #define SPX_TFORS_BYTES (SPX_TFORS_K * SPX_N + \
                          SPX_TFORS_K * SPX_TFORS_HEIGHT * SPX_N)
-#define SPX_TFORS_SIG_MAX 2156
+#define SPX_TFORS_SIG_MAX 2436
 #define SPX_TFORS_PK_BYTES SPX_N
 
 /* custom upgrade parameter definitions */
@@ -87,10 +101,10 @@
 
 /*
  * Note: The valid sum interval is [WOTS_SUM_BASE, WOTS_SUM_BASE + WOTS_SUM_RANGE)
- * For n=128, W1=8, W2=16, W1_LEN=20, W2_LEN=17, CHECKSUM_W=16:
- * E = (20*7 + 17*15) / 2 = 140 + 255) / 2 = 197
- * BASE = 197 - 8 = 189
- * RANGE = 16 - 1 = 15
+ * For n=128, W1=16, W2=32, W1_LEN=22, W2_LEN=8:
+ * E = (22*15 + 8*31) / 2 = (330 + 248) / 2 = 289
+ * BASE = 289 - 8 = 281
+ * RANGE = 15
  */
 
 /* Resulting SPX sizes. */

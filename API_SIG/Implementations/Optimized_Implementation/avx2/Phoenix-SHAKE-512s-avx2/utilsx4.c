@@ -1,272 +1,141 @@
-#include <stdint.h>
 #include <string.h>
 
-#include "address.h"
-#include "hashx4.h"
-#include "params.h"
-#include "thashx4.h"
 #include "utils.h"
 #include "utilsx4.h"
+#include "params.h"
+#include "thashx4.h"
+#include "address.h"
 
-static uint32_t chain_limit(unsigned int start, unsigned int steps, uint32_t w)
-{
-    uint32_t end = start + steps;
-
-    if (end < start || end > w) {
-        end = w;
-    }
-
-    return end;
-}
-
-void chainx4(unsigned char *out0,
-             unsigned char *out1,
-             unsigned char *out2,
-             unsigned char *out3,
-             const unsigned char *in0,
-             const unsigned char *in1,
-             const unsigned char *in2,
-             const unsigned char *in3,
-             const unsigned int start[4],
-             const unsigned int steps[4],
-             const spx_ctx *ctx,
-             uint32_t addrx4[4 * 8],
-             uint32_t w)
-{
-    uint32_t ends[4];
-    uint32_t max_end = 0;
-    uint32_t k;
-    unsigned char dummy0[SPX_N] = {0};
-    unsigned char dummy1[SPX_N] = {0};
-    unsigned char dummy2[SPX_N] = {0};
-    unsigned char dummy3[SPX_N] = {0};
-    uint32_t step_addrx4[4 * 8];
-
-    memcpy(out0, in0, SPX_N);
-    memcpy(out1, in1, SPX_N);
-    memcpy(out2, in2, SPX_N);
-    memcpy(out3, in3, SPX_N);
-
-    for (k = 0; k < 4; k++) {
-        ends[k] = chain_limit(start[k], steps[k], w);
-        if (ends[k] > max_end) {
-            max_end = ends[k];
-        }
-    }
-
-    for (k = 0; k < max_end; k++) {
-        unsigned char *lane_out[4] = {dummy0, dummy1, dummy2, dummy3};
-        const unsigned char *lane_in[4] = {dummy0, dummy1, dummy2, dummy3};
-
-        memset(step_addrx4, 0, sizeof(step_addrx4));
-
-        for (uint32_t lane = 0; lane < 4; lane++) {
-            if (k >= start[lane] && k < ends[lane]) {
-                unsigned char *active_out;
-
-                set_hash_addr(addrx4 + lane * 8, k);
-                memcpy(step_addrx4 + lane * 8, addrx4 + lane * 8, 8 * sizeof(uint32_t));
-
-                if (lane == 0) {
-                    active_out = out0;
-                } else if (lane == 1) {
-                    active_out = out1;
-                } else if (lane == 2) {
-                    active_out = out2;
-                } else {
-                    active_out = out3;
-                }
-
-                lane_out[lane] = active_out;
-                lane_in[lane] = active_out;
-            } else {
-                memcpy(step_addrx4 + lane * 8, addrx4 + lane * 8, 8 * sizeof(uint32_t));
-            }
-        }
-
-        thashx4(lane_out[0], lane_out[1], lane_out[2], lane_out[3],
-                lane_in[0], lane_in[1], lane_in[2], lane_in[3],
-                1, ctx, step_addrx4);
-    }
-}
-
-void gen_leafx4(unsigned char *dest,
+/*
+ * Generate the entire Merkle tree, computing the authentication path for leaf_idx,
+ * and the resulting root node using Merkle's TreeHash algorithm.
+ * Expects the layer and tree parts of the tree_addr to be set, as well as the
+ * tree type (i.e. SPX_ADDR_TYPE_HASHTREE or SPX_ADDR_TYPE_FORSTREE)
+ *
+ * This expects tree_addrx4 to be initialized to 4 parallel addr structures for
+ * the Merkle tree nodes
+ *
+ * Applies the offset idx_offset to indices before building addresses, so that
+ * it is possible to continue counting indices across trees.
+ *
+ * This works by using the standard Merkle tree building algorithm, except
+ * that each 'node' tracked is actually 4 consecutive nodes in the real tree.
+ * When we combine two logical nodes ABCD and WXYZ, we perform the H
+ * operation on adjacent real nodes, forming the parent logical node
+ * (AB)(CD)(WX)(YZ)
+ *
+ * When we get to the top two levels of the real tree (where there is only
+ * one logical node), we continue this operation two more times; the right
+ * most real node will by the actual root (and the other 3 nodes will be
+ * garbage).  We follow the same thashx4 logic so that the 'extract
+ * authentication path components' part of the loop is still executed (and
+ * to simplify the code somewhat)
+ *
+ * This currently assumes tree_height >= 2; I suspect that doing an adjusting
+ * idx, addr_idx on the gen_leafx4 call if tree_height < 2 would fix it; since
+ * we don't actually use such short trees, I haven't bothered
+ */
+void treehashx4(unsigned char *root, unsigned char *auth_path,
                 const spx_ctx *ctx,
-                uint32_t leaf_idx,
-                void *v_info)
-{
-    struct leaf_info_x4 *info = v_info;
-    unsigned char pk0[SPX_WOTS_BYTES];
-    unsigned char pk1[SPX_WOTS_BYTES];
-    unsigned char pk2[SPX_WOTS_BYTES];
-    unsigned char pk3[SPX_WOTS_BYTES];
-    unsigned char chain0[SPX_N];
-    unsigned char chain1[SPX_N];
-    unsigned char chain2[SPX_N];
-    unsigned char chain3[SPX_N];
-    uint32_t wots_k_mask[4];
-
-    for (uint32_t lane = 0; lane < 4; lane++) {
-        uint32_t lane_leaf = leaf_idx + lane;
-        uint32_t *leaf_addr = info->leaf_addr + lane * 8;
-        uint32_t *pk_addr = info->pk_addr + lane * 8;
-
-        wots_k_mask[lane] = (lane_leaf == info->wots_sign_leaf) ? 0u : ~0u;
-        set_keypair_addr(leaf_addr, lane_leaf);
-        set_keypair_addr(pk_addr, lane_leaf);
-    }
-
-    for (uint32_t i = 0; i < SPX_WOTS_LEN; i++) {
-        unsigned int starts[4] = {0, 0, 0, 0};
-        unsigned int full_steps[4];
-        unsigned int sig_steps[4] = {0, 0, 0, 0};
-        unsigned char sig0[SPX_N];
-        unsigned char sig1[SPX_N];
-        unsigned char sig2[SPX_N];
-        unsigned char sig3[SPX_N];
-        uint32_t w;
-        int have_sig_lane = 0;
-
-        if (i < SPX_WOTS_W1_LEN) {
-            w = SPX_WOTS_W1;
-        } else if (i < SPX_WOTS_LEN1) {
-            w = SPX_WOTS_W2;
-        } else {
-            w = SPX_WOTS_CHECKSUM_W;
-        }
-
-        for (uint32_t lane = 0; lane < 4; lane++) {
-            uint32_t *leaf_addr = info->leaf_addr + lane * 8;
-            full_steps[lane] = w - 1;
-            set_chain_addr(leaf_addr, i);
-            set_hash_addr(leaf_addr, 0);
-            set_type(leaf_addr, SPX_ADDR_TYPE_WOTSPRF);
-
-            if (wots_k_mask[lane] == 0u && info->wots_sig != 0) {
-                sig_steps[lane] = info->wots_steps[i];
-                have_sig_lane = 1;
-            }
-        }
-
-        prf_addrx4(chain0, chain1, chain2, chain3, ctx, info->leaf_addr);
-
-        for (uint32_t lane = 0; lane < 4; lane++) {
-            set_type(info->leaf_addr + lane * 8, SPX_ADDR_TYPE_WOTS);
-        }
-
-        if (have_sig_lane) {
-            chainx4(sig0, sig1, sig2, sig3,
-                    chain0, chain1, chain2, chain3,
-                    starts, sig_steps, ctx, info->leaf_addr, w);
-
-            for (uint32_t lane = 0; lane < 4; lane++) {
-                if (wots_k_mask[lane] == 0u && info->wots_sig != 0) {
-                    const unsigned char *sig_src;
-
-                    if (lane == 0) {
-                        sig_src = sig0;
-                    } else if (lane == 1) {
-                        sig_src = sig1;
-                    } else if (lane == 2) {
-                        sig_src = sig2;
-                    } else {
-                        sig_src = sig3;
-                    }
-
-                    memcpy(info->wots_sig + i * SPX_N, sig_src, SPX_N);
-                }
-            }
-        }
-
-        chainx4(chain0, chain1, chain2, chain3,
-                chain0, chain1, chain2, chain3,
-                starts, full_steps, ctx, info->leaf_addr, w);
-
-        memcpy(pk0 + i * SPX_N, chain0, SPX_N);
-        memcpy(pk1 + i * SPX_N, chain1, SPX_N);
-        memcpy(pk2 + i * SPX_N, chain2, SPX_N);
-        memcpy(pk3 + i * SPX_N, chain3, SPX_N);
-    }
-
-    thashx4(dest + 0 * SPX_N,
-            dest + 1 * SPX_N,
-            dest + 2 * SPX_N,
-            dest + 3 * SPX_N,
-            pk0, pk1, pk2, pk3,
-            SPX_WOTS_LEN, ctx, info->pk_addr);
-}
-
-void treehashx4(unsigned char *root,
-                unsigned char *auth_path,
-                const spx_ctx *ctx,
-                uint32_t leaf_idx,
-                uint32_t idx_offset,
+                uint32_t leaf_idx, uint32_t idx_offset,
                 uint32_t tree_height,
-                void (*gen_leafx4_fn)(
-                    unsigned char *,
-                    const spx_ctx *,
-                    uint32_t,
-                    void *),
-                uint32_t tree_addrx4[4 * 8],
+                void (*gen_leafx4)(
+                   unsigned char* /* Where to write the leaves */,
+                   const spx_ctx*,
+                   uint32_t idx, void *info),
+                uint32_t tree_addrx4[4*8],
                 void *info)
 {
+    /* This is where we keep the intermediate nodes */
     SPX_VLA(unsigned char, stackx4, tree_height * 4 * SPX_N);
-    uint32_t left_adj = 0;
-    uint32_t prev_left_adj = 0;
-    uint32_t idx;
-    uint32_t max_idx = (uint32_t)((1u << (tree_height - 2)) - 1u);
+    uint32_t left_adj = 0, prev_left_adj = 0; /* When we're doing the top 3 */
+        /* levels, the left-most part of the tree isn't at the beginning */
+        /* of current[].  These give the offset of the actual start */
 
+    uint32_t idx;
+    uint32_t max_idx = (1 << (tree_height-2)) - 1;
     for (idx = 0;; idx++) {
-        unsigned char current[4 * SPX_N];
+        unsigned char current[4*SPX_N];   /* Current logical node */
+        gen_leafx4( current, ctx, 4*idx + idx_offset,
+                    info );
+
+        /* Now combine the freshly generated right node with previously */
+        /* generated left ones */
         uint32_t internal_idx_offset = idx_offset;
         uint32_t internal_idx = idx;
         uint32_t internal_leaf = leaf_idx;
-        uint32_t h;
+        uint32_t h;     /* The height we are in the Merkle tree */
+        for (h=0;; h++, internal_idx >>= 1, internal_leaf >>= 1) {
 
-        gen_leafx4_fn(current, ctx, 4 * idx + idx_offset, info);
-
-        for (h = 0;; h++, internal_idx >>= 1, internal_leaf >>= 1) {
+            /* Special processing if we're at the top of the tree */
             if (h >= tree_height - 2) {
                 if (h == tree_height) {
-                    memcpy(root, &current[3 * SPX_N], SPX_N);
+                    /* We hit the root; return it */
+                    memcpy( root, &current[3*SPX_N], SPX_N );
                     return;
                 }
-
+                /* The tree indexing logic is a bit off in this case */
+                /* Adjust it so that the left-most node of the part of */
+                /* the tree that we're processing has index 0 */
                 prev_left_adj = left_adj;
-                left_adj = 4u - (1u << (tree_height - h - 1));
+                left_adj = 4 - (1 << (tree_height - h - 1));
             }
 
-            if ((((internal_idx << 2) ^ internal_leaf) & ~0x3u) == 0) {
-                memcpy(&auth_path[h * SPX_N],
-                       &current[(((internal_leaf & 0x3u) ^ 0x1u) + prev_left_adj) * SPX_N],
-                       SPX_N);
+            /* Check if we hit the top of the tree */
+            if (h == tree_height) {
+                /* We hit the root; return it */
+                memcpy( root, &current[3*SPX_N], SPX_N );
+                return;
+            }
+            
+            /*
+             * Check if one of the nodes we have is a part of the
+             * authentication path; if it is, write it out
+             */
+            if ((((internal_idx << 2) ^ internal_leaf) & ~0x3) == 0) {
+                memcpy( &auth_path[ h * SPX_N ],
+                        &current[(((internal_leaf&3)^1) + prev_left_adj) * SPX_N],
+                        SPX_N );
             }
 
-            if ((internal_idx & 1u) == 0u && idx < max_idx) {
+            /*
+             * Check if we're at a left child; if so, stop going up the stack
+             * Exception: if we've reached the end of the tree, keep on going
+             * (so we combine the last 4 nodes into the one root node in two
+             * more iterations)
+             */
+            if ((internal_idx & 1) == 0 && idx < max_idx) {
                 break;
             }
 
-            internal_idx_offset >>= 1;
-            for (int j = 0; j < 4; j++) {
-                set_tree_height(tree_addrx4 + j * 8, h + 1);
-                set_tree_index(tree_addrx4 + j * 8,
-                               2u * (internal_idx & ~1u) + (uint32_t)j - left_adj + internal_idx_offset);
-            }
+            /* Ok, we're at a right node (or doing the top 3 levels) */
+            /* Now combine the left and right logical nodes together */
 
-            {
-                unsigned char *left = &stackx4[h * 4 * SPX_N];
-                thashx4(&current[0 * SPX_N],
-                        &current[1 * SPX_N],
-                        &current[2 * SPX_N],
-                        &current[3 * SPX_N],
-                        &left[0 * SPX_N],
-                        &left[2 * SPX_N],
-                        &current[0 * SPX_N],
-                        &current[2 * SPX_N],
-                        2, ctx, tree_addrx4);
+            /* Set the address of the node we're creating. */
+            int j;
+            internal_idx_offset >>= 1;
+            for (j = 0; j < 4; j++) {
+                set_tree_height(tree_addrx4 + j*8, h + 1);
+                set_tree_index(tree_addrx4 + j*8,
+                     (4/2) * (internal_idx&~1) + j - left_adj + internal_idx_offset );
             }
+            unsigned char *left = &stackx4[h * 4 * SPX_N];
+            thashx4( &current[0 * SPX_N],
+                     &current[1 * SPX_N],
+                     &current[2 * SPX_N],
+                     &current[3 * SPX_N],
+                     &left   [0 * SPX_N],
+                     &left   [2 * SPX_N],
+                     &current[0 * SPX_N],
+                     &current[2 * SPX_N],
+                     2, ctx, tree_addrx4);
         }
 
-        memcpy(&stackx4[h * 4 * SPX_N], current, 4 * SPX_N);
+        /* We've hit a left child; save the current for when we get the */
+        /* corresponding right right */
+        memcpy( &stackx4[h * 4 * SPX_N], current, 4 * SPX_N);
     }
 }
+
+
+
