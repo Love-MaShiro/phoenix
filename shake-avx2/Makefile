@@ -12,11 +12,11 @@ THASHX4_TESTS = test/thashx4
 CONSISTENCY_TESTS = test/test_x4_consistency
 
 SOURCES = address.c randombytes.c merkle.c wots.c wotsx1.c utils.c utilsx1.c \
-	utilsx4.c tfors.c sign.c octopus.c counter.c fips202.c fips202x4.c hash_shake.c \
+	utilsx4.c tfors.c tforsx4.c sign.c octopus.c counter.c fips202.c fips202x4.c hash_shake.c \
 	hash_shake256x4.c thash_shake_$(THASH).c $(THASHX4_SOURCES) \
 	keccak4x/KeccakP-1600-times4-SIMD256.c
 HEADERS = api.h params.h context.h address.h counter.h fips202.h hash.h \
-	merkle.h octopus.h randombytes.h shake_offsets.h tfors.h thash.h \
+	merkle.h octopus.h randombytes.h shake_offsets.h tfors.h tforsx4.h thash.h \
 	utils.h utilsx1.h utilsx4.h wots.h wotsx1.h rng.h fips202x4.h hashx4.h \
 	$(THASHX4_HEADERS) \
 	keccak4x/KeccakP-1600-times4-SnP.h keccak4x/KeccakP-1600-unrolling.macros \

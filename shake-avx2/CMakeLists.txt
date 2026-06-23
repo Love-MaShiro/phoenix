@@ -32,6 +32,7 @@ set(SPX_COMMON_SOURCES
     randombytes.c
     sign.c
     tfors.c
+    tforsx4.c
     utils.c
     utilsx1.c
     utilsx4.c
@@ -84,6 +85,7 @@ if(OpenSSL_FOUND)
         rng.c
         sign.c
         tfors.c
+        tforsx4.c
         utils.c
         utilsx1.c
         utilsx4.c
@@ -111,6 +113,7 @@ if(OpenSSL_FOUND)
         rng.c
         sign.c
         tfors.c
+        tforsx4.c
         utils.c
         utilsx1.c
         utilsx4.c

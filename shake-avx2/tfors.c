@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "tfors.h"
+#include "tforsx4.h"
 #include "utils.h"
 #include "utilsx1.h"
 #include "hash.h"
@@ -118,17 +119,37 @@ void tfors_sign(unsigned char *sig, unsigned char *pk,
     copy_keypair_addr(tfors_tree_addr, tfors_addr);
     copy_keypair_addr(tfors_leaf_addr, tfors_addr);
 
-    // 生成叶子私钥
-    for (i = 0; i < SPX_TFORS_K; i++) {
+    // 生成叶子私钥 (x4 批量 + 尾部标量)
+    i = 0;
+    while (i + 3 < SPX_TFORS_K) {
+        uint32_t addrx4[4 * 8];
+        for (int lane = 0; lane < 4; lane++) {
+            copy_keypair_addr(&addrx4[lane * 8], tfors_tree_addr);
+            set_tree_height(&addrx4[lane * 8], 0);
+            set_tree_index(&addrx4[lane * 8], indices_tmp[i + lane]);
+            set_type(&addrx4[lane * 8], SPX_ADDR_TYPE_TFORSPRF);
+        }
+
+        tfors_gen_sk_x4(sig, sig + SPX_N, sig + 2 * SPX_N, sig + 3 * SPX_N,
+                        ctx, addrx4);
+
+        for (int lane = 0; lane < 4; lane++) {
+            memcpy(leaf_sk[i + lane], sig + lane * SPX_N, SPX_N);
+        }
+        sig += 4 * SPX_N;
+        i += 4;
+    }
+    // 尾部标量处理
+    while (i < SPX_TFORS_K) {
         set_tree_height(tfors_tree_addr, 0);
         set_tree_index(tfors_tree_addr, indices_tmp[i]);
         set_type(tfors_tree_addr, SPX_ADDR_TYPE_TFORSPRF);
 
-        /* Include the secret key part that produces the selected leaf node. */
         tfors_gen_sk(sig, ctx, tfors_tree_addr);
         set_type(tfors_tree_addr, SPX_ADDR_TYPE_TFORSTREE);
         memcpy(leaf_sk[i], sig, SPX_N);
         sig += SPX_N;
+        i++;
     }
     
     // 计算认证路径
@@ -160,18 +181,35 @@ void tfors_pk_from_sig(unsigned char *pk,
 
     message_to_indices(indices, m, ctx);
 
-    // 恢复叶子哈希
-    for ( i = 0; i < SPX_TFORS_K; i++) {
+    // 恢复叶子哈希 (x4 批量 + 尾部标量)
+    i = 0;
+    while (i + 3 < SPX_TFORS_K) {
+        uint32_t addrx4[4 * 8];
+        for (int lane = 0; lane < 4; lane++) {
+            copy_keypair_addr(&addrx4[lane * 8], tfors_addr);
+            set_type(&addrx4[lane * 8], SPX_ADDR_TYPE_TFORSTREE);
+            set_tree_height(&addrx4[lane * 8], 0);
+            set_tree_index(&addrx4[lane * 8], indices[i + lane]);
+        }
+
+        tfors_sk_to_leaf_x4(leaf[i], leaf[i + 1], leaf[i + 2], leaf[i + 3],
+                            sig, sig + SPX_N, sig + 2 * SPX_N, sig + 3 * SPX_N,
+                            ctx, addrx4);
+
+        sig += 4 * SPX_N;
+        i += 4;
+    }
+    // 尾部标量处理
+    while (i < SPX_TFORS_K) {
         uint32_t tfors_leaf_addr[8] = {0};
         copy_keypair_addr(tfors_leaf_addr, tfors_addr);
         set_type(tfors_leaf_addr, SPX_ADDR_TYPE_TFORSTREE);
         set_tree_height(tfors_leaf_addr, 0);
         set_tree_index(tfors_leaf_addr, indices[i]);
-        // print_spx_addr("fors_leaf_addr (initial)", tfors_leaf_addr);
-        
-        tfors_sk_to_leaf(leaf[i], sig, ctx, tfors_leaf_addr);
 
+        tfors_sk_to_leaf(leaf[i], sig, ctx, tfors_leaf_addr);
         sig += SPX_N;
+        i++;
     }
 
     // 读取认证路径
