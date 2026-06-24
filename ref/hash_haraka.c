@@ -23,13 +23,20 @@ void prf_addr(unsigned char *out, const spx_ctx *ctx,
 {
     /* Since SPX_N may be smaller than 32, we need temporary buffers. */
     unsigned char outbuf[32];
-    unsigned char buf[64] = {0};
+    /* Buffer size must accommodate both address (32 bytes) and sk_seed (SPX_N bytes) */
+    unsigned char *buf = malloc(SPX_ADDR_BYTES + SPX_N);
+    if (!buf) {
+        return;
+    }
+    memset(buf, 0, SPX_ADDR_BYTES + SPX_N);
 
     memcpy(buf, addr, SPX_ADDR_BYTES);
     memcpy(buf + SPX_ADDR_BYTES, ctx->sk_seed, SPX_N);
 
     haraka512(outbuf, (const void *)buf, ctx);
     memcpy(out, outbuf, SPX_N);
+    
+    free(buf);
 }
 
 /**

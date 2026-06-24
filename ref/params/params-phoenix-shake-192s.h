@@ -6,21 +6,21 @@
 /* Hash output length in bytes. */
 #define SPX_N 24
 /* Height of the hypertree. */
-#define SPX_FULL_HEIGHT 66
+#define SPX_FULL_HEIGHT 63
 /* Number of subtree layer. */
-#define SPX_D 11
+#define SPX_D 9
 /* TFORS tree dimensions. */
-#define SPX_TFORS_A 14
-#define SPX_TFORS_K_PRIME 16
-#define SPX_TFORS_LOG_K_PRIME 4
-#define SPX_TFORS_K 15
+#define SPX_TFORS_A 12
+#define SPX_TFORS_K_PRIME 32
+#define SPX_TFORS_LOG_K_PRIME 5
+#define SPX_TFORS_K 19
 #define SPX_TFORS_HEIGHT (SPX_TFORS_LOG_K_PRIME + SPX_TFORS_A)
 #define SPX_TFORS_T (1 << SPX_TFORS_A)
 /* Winternitz parameter, */
-#define SPX_WOTS_W1 128
-#define SPX_WOTS_LOGW1 7
-#define SPX_WOTS_W2 256
-#define SPX_WOTS_LOGW2 8
+#define SPX_WOTS_W1 64
+#define SPX_WOTS_LOGW1 6
+#define SPX_WOTS_W2 128
+#define SPX_WOTS_LOGW2 7
 
 /* The hash function is defined by linking a different hash.c file, as opposed
    to setting a #define constant. */
@@ -29,8 +29,8 @@
 #define SPX_ADDR_BYTES 32
 
 /* WOTS parameters. */
-#define SPX_WOTS_W1_LEN 16
-#define SPX_WOTS_W2_LEN 10
+#define SPX_WOTS_W1_LEN 11
+#define SPX_WOTS_W2_LEN 18
 #define SPX_WOTS_LEN1 (SPX_WOTS_W1_LEN + SPX_WOTS_W2_LEN)
 
 /* SPX_WOTS_LEN2 is fixed */
@@ -51,18 +51,17 @@
 #define SPX_TFORS_MSG_BYTES ((SPX_TFORS_A * SPX_TFORS_K + 7) / 8 + SPX_N)
 #define SPX_TFORS_BYTES (SPX_TFORS_K * SPX_N + \
                          SPX_TFORS_K * SPX_TFORS_HEIGHT * SPX_N)
-#define SPX_TFORS_SIG_MAX 4506
+#define SPX_TFORS_SIG_MAX 5274
 #define SPX_TFORS_PK_BYTES SPX_N
 
 /* custom upgrade parameter definitions */
 #define COUNTER_SIZE 4
 
 
-
 /* --- WOTS+C Automatic Parameter Calculation --- */
 /* Winternitz parameter for the single checksum chain */
-#define SPX_WOTS_CHECKSUM_W 32
-#define SPX_WOTS_CHECKSUM_LOGW 5
+#define SPX_WOTS_CHECKSUM_W 16
+#define SPX_WOTS_CHECKSUM_LOGW 4
 
 /*
  * Calculate the expected average sum (E) of the message chains.
@@ -99,6 +98,7 @@
                    SPX_FULL_HEIGHT * SPX_N)
 #define SPX_PK_BYTES (2 * SPX_N)
 #define SPX_SK_BYTES (2 * SPX_N + SPX_PK_BYTES)
+
 #include "../shake_offsets.h"
 
 #endif

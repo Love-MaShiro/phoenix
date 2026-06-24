@@ -10,7 +10,7 @@
 /* Number of subtree layer. */
 #define SPX_D 11
 /* TFORS tree dimensions. */
-#define SPX_TFORS_A 13
+#define SPX_TFORS_A 12
 #define SPX_TFORS_K_PRIME 32
 #define SPX_TFORS_LOG_K_PRIME 5
 #define SPX_TFORS_K 24
@@ -29,8 +29,8 @@
 #define SPX_ADDR_BYTES 32
 
 /* WOTS parameters. */
-#define SPX_WOTS_W1_LEN 24
-#define SPX_WOTS_W2_LEN 16
+#define SPX_WOTS_W1_LEN 10
+#define SPX_WOTS_W2_LEN 28
 #define SPX_WOTS_LEN1 (SPX_WOTS_W1_LEN + SPX_WOTS_W2_LEN)
 
 /* SPX_WOTS_LEN2 is fixed */
@@ -51,7 +51,7 @@
 #define SPX_TFORS_MSG_BYTES ((SPX_TFORS_A * SPX_TFORS_K + 7) / 8 + SPX_N)
 #define SPX_TFORS_BYTES (SPX_TFORS_K * SPX_N + \
                          SPX_TFORS_K * SPX_TFORS_HEIGHT * SPX_N)
-#define SPX_TFORS_SIG_MAX 10000
+#define SPX_TFORS_SIG_MAX 8696
 #define SPX_TFORS_PK_BYTES SPX_N
 
 /* custom upgrade parameter definitions */

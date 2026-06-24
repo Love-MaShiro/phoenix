@@ -6,19 +6,21 @@
 /* Hash output length in bytes. */
 #define SPX_N 24
 /* Height of the hypertree. */
-#define SPX_FULL_HEIGHT 65
+#define SPX_FULL_HEIGHT 68
 /* Number of subtree layer. */
-#define SPX_D 13
+#define SPX_D 17
 /* TFORS tree dimensions. */
-#define SPX_TFORS_A 9
+#define SPX_TFORS_A 8
 #define SPX_TFORS_K_PRIME 32
 #define SPX_TFORS_LOG_K_PRIME 5
-#define SPX_TFORS_K 27
+#define SPX_TFORS_K 29
 #define SPX_TFORS_HEIGHT (SPX_TFORS_LOG_K_PRIME + SPX_TFORS_A)
 #define SPX_TFORS_T (1 << SPX_TFORS_A)
 /* Winternitz parameter, */
-#define SPX_WOTS_W1 16
-#define SPX_WOTS_W2 32
+#define SPX_WOTS_W1 8
+#define SPX_WOTS_LOGW1 3
+#define SPX_WOTS_W2 16
+#define SPX_WOTS_LOGW2 4
 
 /* The hash function is defined by linking a different hash.c file, as opposed
    to setting a #define constant. */
@@ -27,24 +29,8 @@
 #define SPX_ADDR_BYTES 32
 
 /* WOTS parameters. */
-#if SPX_WOTS_W1 == 256
-#define SPX_WOTS_LOGW1 8
-#elif SPX_WOTS_W1 == 16
-#define SPX_WOTS_LOGW1 4
-#else
-#error SPX_WOTS_W1 assumed 16 or 256
-#endif
-
-#if SPX_WOTS_W2 == 32
-#define SPX_WOTS_LOGW2 5
-#elif SPX_WOTS_W2 == 512
-#define SPX_WOTS_LOGW2 9
-#else
-#error SPX_WOTS_W2 assumed 32 or 512
-#endif
-
-#define SPX_WOTS_W1_LEN 48
-#define SPX_WOTS_W2_LEN 0
+#define SPX_WOTS_W1_LEN 36
+#define SPX_WOTS_W2_LEN 21
 #define SPX_WOTS_LEN1 (SPX_WOTS_W1_LEN + SPX_WOTS_W2_LEN)
 
 /* SPX_WOTS_LEN2 is fixed */
@@ -65,7 +51,7 @@
 #define SPX_TFORS_MSG_BYTES ((SPX_TFORS_A * SPX_TFORS_K + 7) / 8 + SPX_N)
 #define SPX_TFORS_BYTES (SPX_TFORS_K * SPX_N + \
                          SPX_TFORS_K * SPX_TFORS_HEIGHT * SPX_N)
-#define SPX_TFORS_SIG_MAX (SPX_TFORS_BYTES * 7) / 10
+#define SPX_TFORS_SIG_MAX 5372
 #define SPX_TFORS_PK_BYTES SPX_N
 
 /* custom upgrade parameter definitions */
@@ -108,7 +94,7 @@
  */
 
 /* Resulting SPX sizes. */
-#define SPX_BYTES (SPX_N + COUNTER_SIZE + SPX_TFORS_SIG_MAX + SPX_D * (SPX_WOTS_BYTES + COUNTER_SIZE) + \
+#define SPX_BYTES (SPX_N + COUNTER_SIZE + 2 + SPX_TFORS_SIG_MAX + SPX_D * (SPX_WOTS_BYTES + COUNTER_SIZE) + \
                    SPX_FULL_HEIGHT * SPX_N)
 #define SPX_PK_BYTES (2 * SPX_N)
 #define SPX_SK_BYTES (2 * SPX_N + SPX_PK_BYTES)

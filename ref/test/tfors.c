@@ -40,7 +40,7 @@ int main(void)
     printf("\n  SPX_TFORS_A = %d", SPX_TFORS_A);
     printf("\n  SPX_TFORS_HEIGHT = %d", SPX_TFORS_HEIGHT);
     printf("\n  SPX_TFORS_MSG_BYTES = %d", SPX_TFORS_MSG_BYTES);
-    printf("\n  SPX_TFORS_MAX_SIG_BYTES = %d\n", SPX_TFORS_BYTES);
+    printf("\n  SPX_TFORS_MAX_SIG_BYTES = %d\n", SPX_TFORS_SIG_MAX);
 
     // 初始化哈希函数
     initialize_hash_function(&ctx);

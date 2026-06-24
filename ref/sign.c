@@ -16,9 +16,7 @@
 #include "utils.h"
 #include "merkle.h"
 
-#define SPX_MAX_COUNTER 10000
-#define SPX_MAX_OPTRAND_TRIES 256
-#define SPX_MAX_MLEN 1024
+#define SPX_MAX_MLEN 3300
 
 /*
  * Returns the length of a secret key, in bytes
@@ -134,46 +132,30 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen, size_t *tfslen,
     
     memcpy(mtmp, m, mlen);
 
-    uint32_t optrand_tries = 0;
-    for (;;) {
-        randombytes(optrand, SPX_N);
-        gen_message_random(sig_origin, sk_prf, optrand, m, mlen, &ctx);
+    randombytes(optrand, SPX_N);
+    gen_message_random(sig_origin, sk_prf, optrand, m, mlen, &ctx);
 
-        counter = 0;
-        while (1) {
-            ull_to_bytes(mtmp + mlen, COUNTER_SIZE, counter);
-            hash_message(mhash, &tree, &idx_leaf, sig_origin, pk,
+    counter = 0;
+    for (counter = 0; ; counter++) {
+        ull_to_bytes(mtmp + mlen, COUNTER_SIZE, counter);
+        hash_message(mhash, &tree, &idx_leaf, sig_origin, pk,
                         mtmp, mlen + COUNTER_SIZE, &ctx);
 
-            message_to_indices(indices, mhash, &ctx);
+        message_to_indices(indices, mhash, &ctx);
 
-            octopus_compute_auth_count(indices, SPX_TFORS_K, &tfors_auth_count);
-            tfors_siglen = SPX_TFORS_K * SPX_N + tfors_auth_count * SPX_N;
-
-            if (tfors_siglen <= tfors_sig_max) {
-                break;
-            }
-            counter++;
-            if (counter >= SPX_MAX_COUNTER) {
-                break;
-            }
-        }
+        octopus_compute_auth_count(indices, SPX_TFORS_K, &tfors_auth_count);
+        tfors_siglen = SPX_TFORS_K * SPX_N + tfors_auth_count * SPX_N;
 
         if (tfors_siglen <= tfors_sig_max) {
             break;
         }
-
-        optrand_tries++;
-        if (optrand_tries >= SPX_MAX_OPTRAND_TRIES) {
-            *siglen = 0;
-            *tfslen = 0;
-            return -1;
-        }
     }
-
 
     save_fors_counter(counter, sig_origin);
     sig += SPX_N + COUNTER_SIZE;
+    // size_t siglen_offset = SPX_TFORS_SIG_MAX - tfors_siglen;
+    ull_to_bytes(sig, 2, tfors_siglen);
+    sig += 2;
 
     set_tree_addr(wots_addr, tree);
     set_keypair_addr(wots_addr, idx_leaf);
@@ -197,7 +179,7 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen, size_t *tfslen,
         tree = tree >> SPX_TREE_HEIGHT;
     }
 
-    *siglen = SPX_N + COUNTER_SIZE + tfors_siglen + SPX_D * (SPX_WOTS_BYTES + SPX_TREE_HEIGHT * SPX_N + COUNTER_SIZE);
+    *siglen = SPX_N + COUNTER_SIZE + 2 + tfors_siglen + SPX_D * (SPX_WOTS_BYTES + SPX_TREE_HEIGHT * SPX_N + COUNTER_SIZE);
     *tfslen = tfors_siglen;
 
 
@@ -207,7 +189,7 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen, size_t *tfslen,
 /**
  * Verifies a detached signature and message under a given public key.
  */
-int crypto_sign_verify(const uint8_t *sig, size_t siglen, size_t tfors_siglen,
+int crypto_sign_verify(const uint8_t *sig, size_t siglen,
                        const uint8_t *m, size_t mlen, const uint8_t *pk)
 {    
     spx_ctx ctx;
@@ -244,6 +226,10 @@ int crypto_sign_verify(const uint8_t *sig, size_t siglen, size_t tfors_siglen,
     /* The additional SPX_N is a result of the hash domain separator. */
     hash_message(mhash, &tree, &idx_leaf, sig, pk, mtmp, mlen + COUNTER_SIZE, &ctx);
     sig += (SPX_N + COUNTER_SIZE);
+
+    /* Extract tfors signature length from signature */
+    size_t tfors_siglen = (size_t)bytes_to_ull(sig, 2);
+    sig += 2;
 
 
     /* Layer correctly defaults to 0, so no need to set_layer_addr */
@@ -330,7 +316,7 @@ int crypto_sign_open(unsigned char *m, unsigned long long *mlen, unsigned long l
     unsigned long long mlen_tmp = smlen - slen_tmp;
  
 
-    if (crypto_sign_verify(sm, (size_t)slen_tmp, (size_t)tfslen_tmp, sm + slen_tmp, (size_t)mlen_tmp, pk)) {
+    if (crypto_sign_verify(sm, (size_t)slen_tmp, sm + slen_tmp, (size_t)mlen_tmp, pk)) {
         memset(m, 0, smlen);
         *mlen = 0;
         return -1;

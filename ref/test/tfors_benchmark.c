@@ -14,10 +14,6 @@
 
 #define NTESTS 10
 
-// max的变化会对TFORS签名时钟周期的影响，max的变化对counter的影响
-// counter可以认为是重试次数，max的变化对重试次数的影响
-//
-
 static int cmp_llu(const void *a, const void*b)
 {
   if(*(unsigned long long *)a < *(unsigned long long *)b) return -1;
@@ -140,13 +136,6 @@ int main(void)
 
     randombytes(tfors_m, SPX_TFORS_MSG_BYTES);
 
-    printf("Parameters: n = %d, h = %d, d = %d, b = %d, k = %d, w = %d\n",
-           SPX_N, SPX_FULL_HEIGHT, SPX_D, SPX_TFORS_A, SPX_TFORS_K,
-           SPX_WOTS_W1);
-    printf("  - Tree height: %d\n", SPX_TFORS_HEIGHT);
-    printf("  - Total leaves: %d\n", (1 << SPX_TFORS_HEIGHT));
-    printf("  - Max signature bytes: %d\n", (int)SPX_TFORS_BYTES);
-    printf("\nRunning %d iterations.\n\n", NTESTS);
 
     MEASURE("TFORS key generation..  ", 1, {
         for (i = 0; i < SPX_TFORS_K; i++) {
@@ -165,12 +154,6 @@ int main(void)
     MEASURE("TFORS verification..    ", 1, 
             tfors_pk_from_sig(tfors_pk, tfors_sig, tfors_m, &ctx, tfors_addr), 
             "TFORS Verification");
-
-    printf("\n=== Results ===\n");
-    printf("TFORS signature size: %d bytes (%.2f KiB)\n", 
-           SPX_TFORS_BYTES, SPX_TFORS_BYTES / 1024.0);
-    printf("TFORS public key size: %d bytes (%.2f KiB)\n", 
-           SPX_TFORS_PK_BYTES, SPX_TFORS_PK_BYTES / 1024.0);
 
     return 0;
 }
