@@ -305,7 +305,8 @@ void octopus_compute_auth_paths(unsigned char root[SPX_N],
     }
 
     // Root = 最终层的唯一节点
-    memcpy(root, current_buf, SPX_N);
+    unsigned char layered_root[SPX_N];
+    memcpy(layered_root, current_buf, SPX_N);
 
     // 释放双缓冲区 (buf_b 始终是额外分配的)
     free(buf_b);
@@ -317,10 +318,26 @@ void octopus_compute_auth_paths(unsigned char root[SPX_N],
         memcpy(leaf_hashes[i], &target_hash[leaf_idx * SPX_N], SPX_N);
     }
     
-    // 7. 重建根 (用于验证，实际 root 已从逐层构建获取)
-    octopus_recompute_root(root, indices, leaf_count, auth,
+    // 7. 重建根 (用于比较验证)
+    unsigned char recomputed_root[SPX_N];
+    octopus_recompute_root(recomputed_root, indices, leaf_count, auth,
                           (const unsigned char*)leaf_hashes,
                           ctx, tree_addr);
+    
+    // 比较两个 root
+    if (memcmp(layered_root, recomputed_root, SPX_N) != 0) {
+        fprintf(stderr, "WARNING: layered root != recomputed root!\n");
+        fprintf(stderr, "Layered root:     ");
+        for (int i = 0; i < SPX_N; i++) fprintf(stderr, "%02x", layered_root[i]);
+        fprintf(stderr, "\nRecomputed root:  ");
+        for (int i = 0; i < SPX_N; i++) fprintf(stderr, "%02x", recomputed_root[i]);
+        fprintf(stderr, "\n");
+        // 使用 recomputed_root 作为输出（与原始行为一致）
+        memcpy(root, recomputed_root, SPX_N);
+    } else {
+        fprintf(stderr, "OK: layered root == recomputed root\n");
+        memcpy(root, layered_root, SPX_N);
+    }
     
     free(target_hash);
     free(is_target);
