@@ -90,6 +90,104 @@ void chainx4(unsigned char *out0,
     }
 }
 
+/**
+ * Phase 1: Generate WOTS secret keys for 4 parallel lanes using PRF.
+ * Sets up PRF addresses and invokes prf_addrx4 for the current chain index.
+ */
+static void generate_wots_secret_keys_x4(unsigned char *chain0,
+                                         unsigned char *chain1,
+                                         unsigned char *chain2,
+                                         unsigned char *chain3,
+                                         const spx_ctx *ctx,
+                                         struct leaf_info_x4 *info,
+                                         uint32_t chain_index,
+                                         uint32_t w)
+{
+    for (uint32_t lane = 0; lane < 4; lane++) {
+        uint32_t *leaf_addr = info->leaf_addr + lane * 8;
+        set_chain_addr(leaf_addr, chain_index);
+        set_hash_addr(leaf_addr, 0);
+        set_type(leaf_addr, SPX_ADDR_TYPE_WOTSPRF);
+    }
+
+    prf_addrx4(chain0, chain1, chain2, chain3, ctx, info->leaf_addr);
+
+    for (uint32_t lane = 0; lane < 4; lane++) {
+        set_type(info->leaf_addr + lane * 8, SPX_ADDR_TYPE_WOTS);
+    }
+}
+
+/**
+ * Phase 2: Compute WOTS chains from secret keys, optionally extracting
+ * signature values at the designated step for the signing lane.
+ */
+static void compute_wots_chains_x4(unsigned char *chain0,
+                                   unsigned char *chain1,
+                                   unsigned char *chain2,
+                                   unsigned char *chain3,
+                                   const spx_ctx *ctx,
+                                   struct leaf_info_x4 *info,
+                                   uint32_t chain_index,
+                                   uint32_t w,
+                                   const uint32_t wots_k_mask[4])
+{
+    unsigned int starts[4] = {0, 0, 0, 0};
+    unsigned int full_steps[4];
+    unsigned int sig_steps[4] = {0, 0, 0, 0};
+    int have_sig_lane = 0;
+
+    for (uint32_t lane = 0; lane < 4; lane++) {
+        full_steps[lane] = w - 1;
+        if (wots_k_mask[lane] == 0u && info->wots_sig != 0) {
+            sig_steps[lane] = info->wots_steps[chain_index];
+            have_sig_lane = 1;
+        }
+    }
+
+    if (have_sig_lane) {
+        unsigned char sig0[SPX_N], sig1[SPX_N], sig2[SPX_N], sig3[SPX_N];
+
+        chainx4(sig0, sig1, sig2, sig3,
+                chain0, chain1, chain2, chain3,
+                starts, sig_steps, ctx, info->leaf_addr, w);
+
+        for (uint32_t lane = 0; lane < 4; lane++) {
+            if (wots_k_mask[lane] == 0u && info->wots_sig != 0) {
+                const unsigned char *sig_src;
+                if (lane == 0) sig_src = sig0;
+                else if (lane == 1) sig_src = sig1;
+                else if (lane == 2) sig_src = sig2;
+                else sig_src = sig3;
+
+                memcpy(info->wots_sig + chain_index * SPX_N, sig_src, SPX_N);
+            }
+        }
+    }
+
+    chainx4(chain0, chain1, chain2, chain3,
+            chain0, chain1, chain2, chain3,
+            starts, full_steps, ctx, info->leaf_addr, w);
+}
+
+/**
+ * Phase 3: Compress WOTS chain endpoints into public keys via thashx4.
+ */
+static void compress_wots_public_keys_x4(unsigned char *dest,
+                                         const unsigned char *pk0,
+                                         const unsigned char *pk1,
+                                         const unsigned char *pk2,
+                                         const unsigned char *pk3,
+                                         const spx_ctx *ctx,
+                                         uint32_t pk_addr[4 * 8])
+{
+    thashx4(dest + 0 * SPX_N,
+            dest + 1 * SPX_N,
+            dest + 2 * SPX_N,
+            dest + 3 * SPX_N,
+            pk0, pk1, pk2, pk3,
+            SPX_WOTS_LEN, ctx, pk_addr);
+}
+
 void gen_leafx4(unsigned char *dest,
                 const spx_ctx *ctx,
                 uint32_t leaf_idx,
@@ -117,15 +215,7 @@ void gen_leafx4(unsigned char *dest,
     }
 
     for (uint32_t i = 0; i < SPX_WOTS_LEN; i++) {
-        unsigned int starts[4] = {0, 0, 0, 0};
-        unsigned int full_steps[4];
-        unsigned int sig_steps[4] = {0, 0, 0, 0};
-        unsigned char sig0[SPX_N];
-        unsigned char sig1[SPX_N];
-        unsigned char sig2[SPX_N];
-        unsigned char sig3[SPX_N];
         uint32_t w;
-        int have_sig_lane = 0;
 
         if (i < SPX_WOTS_W1_LEN) {
             w = SPX_WOTS_W1;
@@ -135,52 +225,11 @@ void gen_leafx4(unsigned char *dest,
             w = SPX_WOTS_CHECKSUM_W;
         }
 
-        for (uint32_t lane = 0; lane < 4; lane++) {
-            uint32_t *leaf_addr = info->leaf_addr + lane * 8;
-            full_steps[lane] = w - 1;
-            set_chain_addr(leaf_addr, i);
-            set_hash_addr(leaf_addr, 0);
-            set_type(leaf_addr, SPX_ADDR_TYPE_WOTSPRF);
+        generate_wots_secret_keys_x4(chain0, chain1, chain2, chain3,
+                                     ctx, info, i, w);
 
-            if (wots_k_mask[lane] == 0u && info->wots_sig != 0) {
-                sig_steps[lane] = info->wots_steps[i];
-                have_sig_lane = 1;
-            }
-        }
-
-        prf_addrx4(chain0, chain1, chain2, chain3, ctx, info->leaf_addr);
-
-        for (uint32_t lane = 0; lane < 4; lane++) {
-            set_type(info->leaf_addr + lane * 8, SPX_ADDR_TYPE_WOTS);
-        }
-
-        if (have_sig_lane) {
-            chainx4(sig0, sig1, sig2, sig3,
-                    chain0, chain1, chain2, chain3,
-                    starts, sig_steps, ctx, info->leaf_addr, w);
-
-            for (uint32_t lane = 0; lane < 4; lane++) {
-                if (wots_k_mask[lane] == 0u && info->wots_sig != 0) {
-                    const unsigned char *sig_src;
-
-                    if (lane == 0) {
-                        sig_src = sig0;
-                    } else if (lane == 1) {
-                        sig_src = sig1;
-                    } else if (lane == 2) {
-                        sig_src = sig2;
-                    } else {
-                        sig_src = sig3;
-                    }
-
-                    memcpy(info->wots_sig + i * SPX_N, sig_src, SPX_N);
-                }
-            }
-        }
-
-        chainx4(chain0, chain1, chain2, chain3,
-                chain0, chain1, chain2, chain3,
-                starts, full_steps, ctx, info->leaf_addr, w);
+        compute_wots_chains_x4(chain0, chain1, chain2, chain3,
+                               ctx, info, i, w, wots_k_mask);
 
         memcpy(pk0 + i * SPX_N, chain0, SPX_N);
         memcpy(pk1 + i * SPX_N, chain1, SPX_N);
@@ -188,12 +237,8 @@ void gen_leafx4(unsigned char *dest,
         memcpy(pk3 + i * SPX_N, chain3, SPX_N);
     }
 
-    thashx4(dest + 0 * SPX_N,
-            dest + 1 * SPX_N,
-            dest + 2 * SPX_N,
-            dest + 3 * SPX_N,
-            pk0, pk1, pk2, pk3,
-            SPX_WOTS_LEN, ctx, info->pk_addr);
+    compress_wots_public_keys_x4(dest, pk0, pk1, pk2, pk3,
+                                 ctx, info->pk_addr);
 }
 
 void treehashx4(unsigned char *root,

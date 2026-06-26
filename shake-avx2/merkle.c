@@ -12,6 +12,33 @@
 #include "params.h"
 
 /*
+ * Configures the leaf_info_x4 structure with Merkle tree addressing context
+ * for 4-lane parallel processing. Encapsulates address copying and type
+ * assignment for cleaner merkle_sign logic.
+ */
+static void configure_merkle_tree_context_x4(struct leaf_info_x4 *info,
+                                             uint32_t tree_addrx4[4 * 8],
+                                             const uint32_t tree_addr[8],
+                                             const uint32_t wots_addr[8],
+                                             unsigned char *signature_buffer,
+                                             const unsigned int *chain_steps,
+                                             uint32_t signing_leaf_index)
+{
+    for (int j = 0; j < 4; j++) {
+        set_type(&tree_addrx4[8 * j], SPX_ADDR_TYPE_HASHTREE);
+        set_type(&info->leaf_addr[8 * j], SPX_ADDR_TYPE_WOTS);
+        set_type(&info->pk_addr[8 * j], SPX_ADDR_TYPE_WOTSPK);
+        copy_subtree_addr(&tree_addrx4[8 * j], tree_addr);
+        copy_subtree_addr(&info->leaf_addr[8 * j], wots_addr);
+        copy_subtree_addr(&info->pk_addr[8 * j], wots_addr);
+    }
+
+    info->wots_sig = signature_buffer;
+    info->wots_steps = chain_steps;
+    info->wots_sign_leaf = signing_leaf_index;
+}
+
+/*
  * This generates a Merkle signature (WOTS signature followed by the Merkle
  * authentication path).  This is in this file because most of the complexity
  * is involved with the WOTS signature; the Merkle authentication path logic
@@ -28,7 +55,6 @@ void merkle_sign(uint8_t *sig, unsigned char *root,
     unsigned steps[SPX_WOTS_LEN];
     unsigned char bitmask[SPX_N];
     uint32_t tree_addrx4[4 * 8] = {0};
-    int j;
 
     /*Initial paramaters for custom thash & counter search*/
     unsigned char digest[SPX_N];
@@ -38,20 +64,13 @@ void merkle_sign(uint8_t *sig, unsigned char *root,
 
     /*Initialize parameters for actual sign*/
     set_type(&tree_addr[0], SPX_ADDR_TYPE_HASHTREE);
-    for (j = 0; j < 4; j++) {
-        set_type(&tree_addrx4[8 * j], SPX_ADDR_TYPE_HASHTREE);
-        set_type(&info.leaf_addr[8 * j], SPX_ADDR_TYPE_WOTS);
-        set_type(&info.pk_addr[8 * j], SPX_ADDR_TYPE_WOTSPK);
-        copy_subtree_addr(&tree_addrx4[8 * j], tree_addr);
-        copy_subtree_addr(&info.leaf_addr[8 * j], wots_addr);
-        copy_subtree_addr(&info.pk_addr[8 * j], wots_addr);
-    }
 
     /* Code for counter search */
     *counter_out = 0;
     if (idx_leaf != to_sign)
     {
         /*Set thash address for custom hash*/
+        configure_merkle_tree_context_x4(&info, tree_addrx4, tree_addr, wots_addr, sig, steps, idx_leaf);
         uint32_t *pk_addr = info.pk_addr;
         set_keypair_addr(pk_addr, idx_leaf);
         set_type(pk_addr, SPX_ADDR_TYPE_COMPRESS_WOTS);
@@ -90,11 +109,8 @@ void merkle_sign(uint8_t *sig, unsigned char *root,
         {
             steps[SPX_WOTS_LEN1] = 0;
         }
+        configure_merkle_tree_context_x4(&info, tree_addrx4, tree_addr, wots_addr, sig, steps, idx_leaf);
     }
-    info.wots_sig = sig;
-    info.wots_steps = steps;
-
-    info.wots_sign_leaf = idx_leaf;
 
     treehashx4(root, auth_path, ctx,
                idx_leaf, 0,

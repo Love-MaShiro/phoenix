@@ -40,6 +40,34 @@ struct tfors_gen_leaf_info {
 };
 
 
+/* Lookup table for single-bit extraction: BIT_EXTRACT_MASK[i] = (1 << i) */
+static const uint8_t BIT_EXTRACT_MASK[8] = {
+    0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80
+};
+
+/**
+ * Extracts a multi-bit field from a message byte array using lookup-table-based
+ * bit extraction. Reads `num_bits` consecutive bits starting at `start_bit`
+ * and returns them as a little-endian unsigned integer.
+ */
+static uint32_t extract_field_from_message(const unsigned char *message,
+                                           uint32_t start_bit,
+                                           uint32_t num_bits)
+{
+    uint32_t value = 0;
+    uint32_t bit_cursor = start_bit;
+
+    for (uint32_t bit = 0; bit < num_bits; bit++) {
+        uint32_t byte_index = bit_cursor >> 3;
+        uint32_t bit_position = bit_cursor & 7;
+        uint8_t masked = message[byte_index] & BIT_EXTRACT_MASK[bit_position];
+        value |= (masked != 0) ? (1u << bit) : 0;
+        bit_cursor++;
+    }
+
+    return value;
+}
+
 static void sort_indices(uint32_t *indices)
 {
     for (uint32_t i = 1; i < SPX_TFORS_K; i++) {
@@ -73,19 +101,9 @@ void message_to_indices(uint32_t *indices, const unsigned char *m, const spx_ctx
     
     /* Extract indices2 from the remaining bits (after SPX_N bytes) */
     unsigned int start_bit = SPX_N * 8;
-    unsigned int bit_offset = start_bit;
     
     for (i = 0; i < SPX_TFORS_K; i++) {
-        indices2[i] = 0;
-        for (j = 0; j < SPX_TFORS_A; j++) {
-            unsigned int byte_pos = bit_offset >> 3;
-            unsigned int bit_in_byte = bit_offset & 0x7;
-            
-            // indices2[i] ^= ((m[byte_pos] >> bit_in_byte) & 1u) << (unsigned int)j;
-            indices2[i] |= ((m[byte_pos] >> bit_in_byte) & 1u) << (unsigned int)j;
-
-            bit_offset++;
-        }
+        indices2[i] = extract_field_from_message(m, start_bit + i * SPX_TFORS_A, SPX_TFORS_A);
     }
 
     /* Compute final leaf indices from combined indices */

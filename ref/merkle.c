@@ -11,6 +11,25 @@
 #include "params.h"
 
 /*
+ * Configures the leaf_info_x1 structure with Merkle tree addressing context.
+ * Encapsulates address copying and type assignment for cleaner merkle_sign logic.
+ */
+static void configure_merkle_tree_context(struct leaf_info_x1 *info,
+                                          const uint32_t wots_addr[8],
+                                          unsigned char *signature_buffer,
+                                          const unsigned int *chain_steps,
+                                          uint32_t signing_leaf_index)
+{
+    copy_subtree_addr(info->leaf_addr, wots_addr);
+    copy_subtree_addr(info->pk_addr, wots_addr);
+    set_type(info->pk_addr, SPX_ADDR_TYPE_WOTSPK);
+
+    info->wots_sig = signature_buffer;
+    info->wots_steps = chain_steps;
+    info->wots_sign_leaf = signing_leaf_index;
+}
+
+/*
  * This generates a Merkle signature (WOTS signature followed by the Merkle
  * authentication path).  This is in this file because most of the complexity
  * is involved with the WOTS signature; the Merkle authentication path logic
@@ -35,15 +54,13 @@ void merkle_sign(uint8_t *sig, unsigned char *root,
 
     /*Initialize parameters for actual sign*/
     set_type(&tree_addr[0], SPX_ADDR_TYPE_HASHTREE);
-    set_type(&info.pk_addr[0], SPX_ADDR_TYPE_WOTSPK);
-    copy_subtree_addr(&info.leaf_addr[0], wots_addr);
-    copy_subtree_addr(&info.pk_addr[0], wots_addr);
 
     /* Code for counter search */
     *counter_out = 0;
     if (idx_leaf != to_sign)
     {
         /*Set thash address for custom hash*/
+        configure_merkle_tree_context(&info, wots_addr, sig, steps, idx_leaf);
         uint32_t *pk_addr = info.pk_addr;
         set_keypair_addr(pk_addr, idx_leaf);
         set_type(pk_addr, SPX_ADDR_TYPE_COMPRESS_WOTS);
@@ -82,11 +99,8 @@ void merkle_sign(uint8_t *sig, unsigned char *root,
         {
             steps[SPX_WOTS_LEN1] = 0;
         }
+        configure_merkle_tree_context(&info, wots_addr, sig, steps, idx_leaf);
     }
-    info.wots_sig = sig;
-    info.wots_steps = steps;
-
-    info.wots_sign_leaf = idx_leaf;
 
     treehashx1(root, auth_path, ctx,
                idx_leaf, 0,
