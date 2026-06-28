@@ -60,8 +60,8 @@
 
 /* --- WOTS+C Automatic Parameter Calculation --- */
 /* Winternitz parameter for the single checksum chain */
-#define SPX_WOTS_CHECKSUM_W 16
-#define SPX_WOTS_CHECKSUM_LOGW 4
+#define SPX_WOTS_CHECKSUM_W 32
+#define SPX_WOTS_CHECKSUM_LOGW 5
 
 /*
  * Calculate the expected average sum (E) of the message chains.
@@ -87,10 +87,10 @@
 
 /*
  * Note: The valid sum interval is [WOTS_SUM_BASE, WOTS_SUM_BASE + WOTS_SUM_RANGE)
- * For n=256, W1=64, W2=128, W1_LEN=10, W2_LEN=28, CHECKSUM_W=16:
+ * For n=256, W1=64, W2=128, W1_LEN=10, W2_LEN=28, CHECKSUM_W=32:
  * E = (10*63 + 28*127) / 2 = 630 + 3556) / 2 = 2093
- * BASE = 2093 - 8 = 2085
- * RANGE = 16 - 1 = 15
+ * BASE = 2093 - 16 = 2077
+ * RANGE = 32 - 1 = 31
  */
 
 

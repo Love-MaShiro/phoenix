@@ -51,7 +51,7 @@
 #define SPX_TFORS_MSG_BYTES ((SPX_TFORS_A * SPX_TFORS_K + 7) / 8 + SPX_N)
 #define SPX_TFORS_BYTES (SPX_TFORS_K * SPX_N + \
                          SPX_TFORS_K * SPX_TFORS_HEIGHT * SPX_N)
-#define SPX_TFORS_SIG_MAX 5298
+#define SPX_TFORS_SIG_MAX 5274
 #define SPX_TFORS_PK_BYTES SPX_N
 
 /* custom upgrade parameter definitions */
@@ -60,8 +60,8 @@
 
 /* --- WOTS+C Automatic Parameter Calculation --- */
 /* Winternitz parameter for the single checksum chain */
-#define SPX_WOTS_CHECKSUM_W 16
-#define SPX_WOTS_CHECKSUM_LOGW 4
+#define SPX_WOTS_CHECKSUM_W 32
+#define SPX_WOTS_CHECKSUM_LOGW 5
 
 /*
  * Calculate the expected average sum (E) of the message chains.
@@ -87,10 +87,10 @@
 
 /*
  * Note: The valid sum interval is [WOTS_SUM_BASE, WOTS_SUM_BASE + WOTS_SUM_RANGE)
- * For n=192, W1=64, W2=128, W1_LEN=11, W2_LEN=18, CHECKSUM_W=16:
+ * For n=192, W1=64, W2=128, W1_LEN=11, W2_LEN=18, CHECKSUM_W=32:
  * E = (11*63 + 18*127) / 2 = 693 + 2286) / 2 = 1489
- * BASE = 1489 - 8 = 1481
- * RANGE = 16 - 1 = 15
+ * BASE = 1489 - 16 = 1473
+ * RANGE = 32 - 1 = 31
  */
 
 
