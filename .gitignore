@@ -19,11 +19,15 @@ shake-avx2/test/*
 # Generated KAT outputs
 PQCsignKAT_*.rsp
 PQCsignKAT_*.req
+*.exe
 
 # Common compiler byproducts
 *.o
 *.o.d
 
 # Engineer documents
+.agents
 .aone_copilot
+.codex
 openspec
+sm3.md

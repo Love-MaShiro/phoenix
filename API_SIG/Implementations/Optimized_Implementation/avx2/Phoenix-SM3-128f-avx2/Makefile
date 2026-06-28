@@ -1,4 +1,4 @@
-ALGORITHM_INSTANCE = Phoenix-SM3-128f-avx2
+﻿ALGORITHM_INSTANCE = Phoenix-SM3-128f-avx2
 PARAMS = phoenix-sm3-128f
 
 CC ?= gcc
@@ -9,7 +9,7 @@ CORE_SOURCES = \
 	address.c \
 	auxfunc.c \
 	counter.c \
-	hash_sm3.c sm3_drng.c hash_sm3x8.c hash_sm3x4.c \
+	hash_sm3.c sm3_drng.c hash_sm3x4.c hash_sm3x8.c \
 	merkle.c \
 	octopus.c \
 	randombytes.c \
@@ -33,7 +33,7 @@ SUBMISSION_SOURCES = \
 	drng.c \
 	KAT_SIG.c
 
-.PHONY: all clean kat benchmark
+.PHONY: all clean kat benchmark test-sm3-xofx4
 
 all: KAT_SIG
 
@@ -46,7 +46,12 @@ KAT_SIG: $(CORE_SOURCES) $(AVX2_SOURCES) $(SUBMISSION_SOURCES) SIG_AlgorithmInst
 benchmark: $(CORE_SOURCES) $(AVX2_SOURCES) test/benchmark.c test/cycles.c
 	$(CC) $(CFLAGS) -U SUBMISSION_DRNG -DPARAMNAME=\"$(ALGORITHM_INSTANCE)\" -o $@ $(CORE_SOURCES) $(AVX2_SOURCES) test/benchmark.c test/cycles.c
 
+
+test-sm3-xofx4: $(CORE_SOURCES) $(AVX2_SOURCES) test/sm3_xofx4.c
+	$(CC) $(CFLAGS) -U SUBMISSION_DRNG -DPARAMNAME=\"$(ALGORITHM_INSTANCE)\" -o $@ $(CORE_SOURCES) $(AVX2_SOURCES) test/sm3_xofx4.c
 clean:
 	$(RM) KAT_SIG
 	$(RM) benchmark
+	$(RM) test-sm3-xofx4
 	$(RM) -r output
+
