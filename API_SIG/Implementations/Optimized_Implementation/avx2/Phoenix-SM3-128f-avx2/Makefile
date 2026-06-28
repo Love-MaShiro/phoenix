@@ -9,15 +9,17 @@ CORE_SOURCES = \
 	address.c \
 	auxfunc.c \
 	counter.c \
-	hash_sm3.c sm3_drng.c hash_sm3x8.c \
+	hash_sm3.c sm3_drng.c hash_sm3x8.c hash_sm3x4.c \
 	merkle.c \
 	octopus.c \
 	randombytes.c \
 	sign.c \
 	tfors.c \
-	thash_sm3_simple.c thash_sm3_simplex8.c \
+	thash_sm3_simple.c thash_sm3_simplex8.c thash_sm3_simplex4.c \
 	utils.c \
 	utilsx1.c \
+	utilsx4.c \
+	utilsx8.c \
 	wots.c \
 	wotsx1.c
 

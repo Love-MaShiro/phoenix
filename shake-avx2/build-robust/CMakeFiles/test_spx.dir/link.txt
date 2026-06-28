@@ -1,1 +1,0 @@
-/usr/bin/cc CMakeFiles/test_spx.dir/test/spx.c.o CMakeFiles/test_spx.dir/test/cycles.c.o -o test_spx  libspx_shake_ref.a 

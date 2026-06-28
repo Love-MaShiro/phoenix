@@ -4,7 +4,7 @@
 
 #include "params.h"
 #include "merkle.h"
-#include "wots.h"
+#include "gwotsc.h"
 #include "utils.h"
 #include "context.h"
 #include "address.h"
@@ -19,12 +19,12 @@ int main() {
     memset(ctx.pub_seed, 0x02, SPX_N);
 
     /* 2. Setup Addresses */
-    uint32_t wots_addr[8] = {0};
+    uint32_t gwotsc_addr[8] = {0};
     uint32_t tree_addr[8] = {0};
     uint32_t idx_leaf = 5; /* Test with leaf index 5 to ensure ADRS logic is correct */
 
-    set_type(wots_addr, SPX_ADDR_TYPE_WOTS);
-    set_keypair_addr(wots_addr, idx_leaf);
+    set_type(gwotsc_addr, SPX_ADDR_TYPE_WOTS);
+    set_keypair_addr(gwotsc_addr, idx_leaf);
 
     set_type(tree_addr, SPX_ADDR_TYPE_HASHTREE);
     /* Note: tree_addr index will be updated inside treehash/compute_root */
@@ -54,7 +54,7 @@ int main() {
     /* This will trigger the counter search loop in merkle_sign */
     /* We pass message_to_sign as the 'root' parameter because merkle_sign 
        signs the root of the tree below it. */
-    merkle_sign(sig, expected_root, &ctx, wots_addr, tree_addr, idx_leaf, &counter);
+    merkle_sign(sig, expected_root, &ctx, gwotsc_addr, tree_addr, idx_leaf, &counter);
 
     printf("Step 1: merkle_sign completed.\n");
     printf("Found Counter: %u\n", counter);
@@ -64,7 +64,7 @@ int main() {
 
     /* 5. VERIFY - Phase A: Recover WOTS Public Key */
     /* Use the counter found during signing to reconstruct the digest */
-    wots_pk_from_sig(recovered_pk_full, sig, message_to_sign, &ctx, wots_addr, counter);
+    gwotsc_pk_from_sig(recovered_pk_full, sig, message_to_sign, &ctx, gwotsc_addr, counter);
 
     /* Check if recovery failed (returned all zeros) */
     int all_zero = 1;
@@ -75,17 +75,17 @@ int main() {
         }
     }
     if(all_zero) {
-        printf("FAILURE: wots_pk_from_sig validation failed (Zero-bits or Range).\n");
+        printf("FAILURE: gwotsc_pk_from_sig validation failed (Zero-bits or Range).\n");
         return -1;
     }
     printf("Step 2: WOTS PK recovered and validated.\n");
 
     /* 6. VERIFY - Phase B: Convert WOTS PK to Leaf */
     /* In SPHINCS+, the leaf is the thash of the WOTS PK */
-    uint32_t wots_pk_addr[8] = {0};
-    copy_keypair_addr(wots_pk_addr, wots_addr);
-    set_type(wots_pk_addr, SPX_ADDR_TYPE_WOTSPK);
-    thash(recovered_leaf, recovered_pk_full, SPX_WOTS_LEN, &ctx, wots_pk_addr);
+    uint32_t gwotsc_pk_addr[8] = {0};
+    copy_keypair_addr(gwotsc_pk_addr, gwotsc_addr);
+    set_type(gwotsc_pk_addr, SPX_ADDR_TYPE_WOTSPK);
+    thash(recovered_leaf, recovered_pk_full, SPX_WOTS_LEN, &ctx, gwotsc_pk_addr);
     
     printf("Step 3: Leaf node computed.\n");
 

@@ -1,5 +1,11 @@
+/* Phoenix 4-way parallel thash implementation using SHAKE256
+ *
+ * Tweakable hash function for Phoenix with AVX2 parallel optimization.
+ */
+
 #include <stdint.h>
 #include <string.h>
+#include <immintrin.h>
 
 #include "fips202x4.h"
 #include "params.h"
@@ -8,6 +14,7 @@
 
 extern void KeccakP1600times4_PermuteAll_24rounds(__m256i *s);
 
+/* Compute 4-way parallel tweakable hash on input blocks */
 void thashx4(unsigned char *out0,
              unsigned char *out1,
              unsigned char *out2,
@@ -20,88 +27,86 @@ void thashx4(unsigned char *out0,
              const spx_ctx *ctx,
              uint32_t addrx4[4 * 8])
 {
-    if ((inblocks == 1 || inblocks == 2) && SPX_N == 16) {
-        /* Optimized path: directly manipulate AVX2 state to avoid memcpy.
-         * This is the hot path for WOTS chain iteration.
-         * Only valid for SPX_N == 16 (SHAKE-128) */
-        __m256i state[25];
-        
-        /* Load pub_seed into first 2 lanes (SPX_N = 16 bytes = 2 x int64) */
-        for (int i = 0; i < SPX_N/8; i++) {
-            state[i] = _mm256_set1_epi64x(((int64_t*)ctx->pub_seed)[i]);
+    /* For PH_N > 32, always use generic path for correctness */
+    /* The optimized path has issues with rate/alignment calculations */
+    if (PH_N <= 32 && (inblocks == 1 || inblocks == 2)) {
+        /* Direct Keccak state manipulation for small inputs (PH_N <= 32 only) */
+        __m256i keccak_state[25];
+        int lane_idx, word_idx;
+
+        /* Load public seed into state */
+        for (word_idx = 0; word_idx < PH_N/8; word_idx++) {
+            keccak_state[word_idx] = _mm256_set1_epi64x(((int64_t*)ctx->pub_seed)[word_idx]);
         }
-        
-        /* Build address state - interleave addresses from 4 parallel instances */
-        for (int i = 0; i < 4; i++) {
-            state[SPX_N/8+i] = _mm256_set_epi32(
-                addrx4[3*8+1+2*i],
-                addrx4[3*8+2*i],
-                addrx4[2*8+1+2*i],
-                addrx4[2*8+2*i],
-                addrx4[8+1+2*i],
-                addrx4[8+2*i],
-                addrx4[1+2*i],
-                addrx4[2*i]
+
+        /* Interleave 4 addresses into state */
+        for (lane_idx = 0; lane_idx < 4; lane_idx++) {
+            keccak_state[PH_N/8+lane_idx] = _mm256_set_epi32(
+                addrx4[3*8+1+2*lane_idx],
+                addrx4[3*8+2*lane_idx],
+                addrx4[2*8+1+2*lane_idx],
+                addrx4[2*8+2*lane_idx],
+                addrx4[8+1+2*lane_idx],
+                addrx4[8+2*lane_idx],
+                addrx4[1+2*lane_idx],
+                addrx4[2*lane_idx]
             );
         }
-        
-        /* Build input state - interleave inputs from 4 parallel instances */
-        for (unsigned int i = 0; i < (SPX_N/8) * inblocks; i++) {
-            state[SPX_N/8+4+i] = _mm256_set_epi64x(
-                ((int64_t*)in3)[i],
-                ((int64_t*)in2)[i],
-                ((int64_t*)in1)[i],
-                ((int64_t*)in0)[i]
-            );
+
+        /* Load input blocks into state */
+        for (word_idx = 0; word_idx < (PH_N/8) * inblocks; word_idx++) {
+            keccak_state[PH_N/8+4+word_idx] = _mm256_set_epi64x(
+                        ((int64_t*)in3)[word_idx],
+                        ((int64_t*)in2)[word_idx],
+                        ((int64_t*)in1)[word_idx],
+                        ((int64_t*)in0)[word_idx]
+                    );
         }
-        
-        /* Domain separator and padding */
-        for (int i = (SPX_N/8)*(1+inblocks)+4; i < 16; i++) {
-            state[i] = _mm256_set1_epi64x(0);
+
+        /* Set domain separator and padding */
+        for (word_idx = (PH_N/8)*(1+inblocks)+4; word_idx < 16; word_idx++) {
+            keccak_state[word_idx] = _mm256_set1_epi64x(0);
         }
-        state[16] = _mm256_set1_epi64x((long long)(0x80ULL << 56));
-        state[(SPX_N/8)*(1+inblocks)+4] = _mm256_xor_si256(
-            state[(SPX_N/8)*(1+inblocks)+4],
+        keccak_state[16] = _mm256_set1_epi64x((long long)(0x80ULL << 56));
+        keccak_state[(PH_N/8)*(1+inblocks)+4] = _mm256_xor_si256(
+            keccak_state[(PH_N/8)*(1+inblocks)+4],
             _mm256_set1_epi64x(0x1f)
         );
-        for (int i = 17; i < 25; i++) {
-            state[i] = _mm256_set1_epi64x(0);
+        for (word_idx = 17; word_idx < 25; word_idx++) {
+            keccak_state[word_idx] = _mm256_set1_epi64x(0);
         }
-        
-        /* Permute and extract results */
-        KeccakP1600times4_PermuteAll_24rounds(&state[0]);
-        
-        for (int i = 0; i < SPX_N/8; i++) {
-            ((int64_t*)out0)[i] = _mm256_extract_epi64(state[i], 0);
-            ((int64_t*)out1)[i] = _mm256_extract_epi64(state[i], 1);
-            ((int64_t*)out2)[i] = _mm256_extract_epi64(state[i], 2);
-            ((int64_t*)out3)[i] = _mm256_extract_epi64(state[i], 3);
+
+        /* Perform 4-way Keccak permutation */
+        KeccakP1600times4_PermuteAll_24rounds(&keccak_state[0]);
+
+        /* Extract output for each lane */
+        for (word_idx = 0; word_idx < PH_N/8; word_idx++) {
+            ((int64_t*)out0)[word_idx] = _mm256_extract_epi64(keccak_state[word_idx], 0);
+            ((int64_t*)out1)[word_idx] = _mm256_extract_epi64(keccak_state[word_idx], 1);
+            ((int64_t*)out2)[word_idx] = _mm256_extract_epi64(keccak_state[word_idx], 2);
+            ((int64_t*)out3)[word_idx] = _mm256_extract_epi64(keccak_state[word_idx], 3);
         }
     } else {
-        /* General path: allocate buffers and use shake256x4 */
-        SPX_VLA(uint8_t, buf0, SPX_N + SPX_ADDR_BYTES + inblocks * SPX_N);
-        SPX_VLA(uint8_t, buf1, SPX_N + SPX_ADDR_BYTES + inblocks * SPX_N);
-        SPX_VLA(uint8_t, buf2, SPX_N + SPX_ADDR_BYTES + inblocks * SPX_N);
-        SPX_VLA(uint8_t, buf3, SPX_N + SPX_ADDR_BYTES + inblocks * SPX_N);
-        
-        /* Match thash() exactly: pub_seed || addr || in. */
-        memcpy(buf0, ctx->pub_seed, SPX_N);
-        memcpy(buf1, ctx->pub_seed, SPX_N);
-        memcpy(buf2, ctx->pub_seed, SPX_N);
-        memcpy(buf3, ctx->pub_seed, SPX_N);
-        
-        memcpy(buf0 + SPX_N, addrx4 + 0 * 8, SPX_ADDR_BYTES);
-        memcpy(buf1 + SPX_N, addrx4 + 1 * 8, SPX_ADDR_BYTES);
-        memcpy(buf2 + SPX_N, addrx4 + 2 * 8, SPX_ADDR_BYTES);
-        memcpy(buf3 + SPX_N, addrx4 + 3 * 8, SPX_ADDR_BYTES);
-        
-        memcpy(buf0 + SPX_N + SPX_ADDR_BYTES, in0, inblocks * SPX_N);
-        memcpy(buf1 + SPX_N + SPX_ADDR_BYTES, in1, inblocks * SPX_N);
-        memcpy(buf2 + SPX_N + SPX_ADDR_BYTES, in2, inblocks * SPX_N);
-        memcpy(buf3 + SPX_N + SPX_ADDR_BYTES, in3, inblocks * SPX_N);
-        
-        shake256x4(out0, out1, out2, out3, SPX_N,
-                   buf0, buf1, buf2, buf3,
-                   SPX_N + SPX_ADDR_BYTES + inblocks * SPX_N);
+        /* Use generic shake256x4 for larger inputs or PH_N > 32 */
+        PH_VLA(unsigned char, buf0, PH_N + PH_ADDR_BYTES + inblocks*PH_N);
+        PH_VLA(unsigned char, buf1, PH_N + PH_ADDR_BYTES + inblocks*PH_N);
+        PH_VLA(unsigned char, buf2, PH_N + PH_ADDR_BYTES + inblocks*PH_N);
+        PH_VLA(unsigned char, buf3, PH_N + PH_ADDR_BYTES + inblocks*PH_N);
+
+        memcpy(buf0, ctx->pub_seed, PH_N);
+        memcpy(buf1, ctx->pub_seed, PH_N);
+        memcpy(buf2, ctx->pub_seed, PH_N);
+        memcpy(buf3, ctx->pub_seed, PH_N);
+        memcpy(buf0 + PH_N, addrx4 + 0*8, PH_ADDR_BYTES);
+        memcpy(buf1 + PH_N, addrx4 + 1*8, PH_ADDR_BYTES);
+        memcpy(buf2 + PH_N, addrx4 + 2*8, PH_ADDR_BYTES);
+        memcpy(buf3 + PH_N, addrx4 + 3*8, PH_ADDR_BYTES);
+        memcpy(buf0 + PH_N + PH_ADDR_BYTES, in0, inblocks * PH_N);
+        memcpy(buf1 + PH_N + PH_ADDR_BYTES, in1, inblocks * PH_N);
+        memcpy(buf2 + PH_N + PH_ADDR_BYTES, in2, inblocks * PH_N);
+        memcpy(buf3 + PH_N + PH_ADDR_BYTES, in3, inblocks * PH_N);
+
+        shake256x4(out0, out1, out2, out3, PH_N,
+                   buf0, buf1, buf2, buf3, PH_N + PH_ADDR_BYTES + inblocks*PH_N);
     }
 }

@@ -1,104 +1,81 @@
-#ifndef SPX_PARAMS_H
-#define SPX_PARAMS_H
+/* Phoenix-SHAKE-384s parameter definitions */
 
-#define SPX_NAMESPACE(s) SPX_##s
+#ifndef PH_PARAMS_H
+#define PH_PARAMS_H
+
+#define PH_NAMESPACE(s) PH_##s
 
 /* Hash output length in bytes. */
-#define SPX_N 48
+#define PH_N 48
 /* Height of the hypertree. */
-#define SPX_FULL_HEIGHT 66
+#define PH_FULL_HEIGHT 66
 /* Number of subtree layer. */
-#define SPX_D 11
+#define PH_D 11
 /* TFORS tree dimensions. */
-#define SPX_TFORS_A 12
-#define SPX_TFORS_K_PRIME 64
-#define SPX_TFORS_LOG_K_PRIME 6
-#define SPX_TFORS_K 37
-#define SPX_TFORS_HEIGHT (SPX_TFORS_LOG_K_PRIME + SPX_TFORS_A)
-#define SPX_TFORS_T (1 << SPX_TFORS_A)
-/* Winternitz parameter, */
-#define SPX_WOTS_W1 64
-#define SPX_WOTS_LOGW1 6
-#define SPX_WOTS_W2 128
-#define SPX_WOTS_LOGW2 7
+#define PH_TFORS_A 12
+#define PH_TFORS_K_PRIME 64
+#define PH_TFORS_LOG_K_PRIME 6
+#define PH_TFORS_K 37
+#define PH_TFORS_HEIGHT (PH_TFORS_LOG_K_PRIME + PH_TFORS_A)
+#define PH_TFORS_T (1 << PH_TFORS_A)
+/* Winternitz parameter. */
+#define PH_GWOTSC_W1 64
+#define PH_GWOTSC_LOGW1 6
+#define PH_GWOTSC_W2 128
+#define PH_GWOTSC_LOGW2 7
 
-/* The hash function is defined by linking a different hash.c file, as opposed
-   to setting a #define constant. */
+/* Address length in bytes. */
+#define PH_ADDR_BYTES 32
 
-/* For clarity */
-#define SPX_ADDR_BYTES 32
+/* GWOTSC chain lengths. */
+#define PH_GWOTSC_W1_LEN 8
+#define PH_GWOTSC_W2_LEN 48
+#define PH_GWOTSC_LEN1 (PH_GWOTSC_W1_LEN + PH_GWOTSC_W2_LEN)
 
-/* WOTS parameters. */
-#define SPX_WOTS_W1_LEN 8
-#define SPX_WOTS_W2_LEN 48
-#define SPX_WOTS_LEN1 (SPX_WOTS_W1_LEN + SPX_WOTS_W2_LEN)
+/* Checksum chain length is fixed. */
+#define PH_GWOTSC_LEN2 1
 
-/* SPX_WOTS_LEN2 is fixed */
-#define SPX_WOTS_LEN2 1
-
-#define SPX_WOTS_LEN (SPX_WOTS_LEN1 + SPX_WOTS_LEN2)
-#define SPX_WOTS_BYTES (SPX_WOTS_LEN * SPX_N)
-#define SPX_WOTS_PK_BYTES SPX_WOTS_BYTES
+#define PH_GWOTSC_LEN (PH_GWOTSC_LEN1 + PH_GWOTSC_LEN2)
+#define PH_GWOTSC_BYTES (PH_GWOTSC_LEN * PH_N)
+#define PH_GWOTSC_PK_BYTES PH_GWOTSC_BYTES
 
 /* Subtree size. */
-#define SPX_TREE_HEIGHT (SPX_FULL_HEIGHT / SPX_D)
+#define PH_TREE_HEIGHT (PH_FULL_HEIGHT / PH_D)
 
-#if SPX_TREE_HEIGHT * SPX_D != SPX_FULL_HEIGHT
-#error SPX_D should always divide SPX_FULL_HEIGHT
+#if PH_TREE_HEIGHT * PH_D != PH_FULL_HEIGHT
+#error PH_D should always divide PH_FULL_HEIGHT
 #endif
 
 /* TFORS parameters. */
-#define SPX_TFORS_MSG_BYTES ((SPX_TFORS_A * SPX_TFORS_K + 7) / 8 + SPX_N)
-#define SPX_TFORS_BYTES (SPX_TFORS_K * SPX_N + \
-                         SPX_TFORS_K * SPX_TFORS_HEIGHT * SPX_N)
-#define SPX_TFORS_SIG_MAX 21364
-#define SPX_TFORS_PK_BYTES SPX_N
+#define PH_TFORS_MSG_BYTES ((PH_TFORS_A * PH_TFORS_K + 7) / 8 + PH_N)
+#define PH_TFORS_BYTES (PH_TFORS_K * PH_N + \
+                         PH_TFORS_K * PH_TFORS_HEIGHT * PH_N)
+#define PH_TFORS_SIG_MAX 21364
+#define PH_TFORS_PK_BYTES PH_N
 
-/* custom upgrade parameter definitions */
+/* Counter size for GWOTSC. */
 #define COUNTER_SIZE 4
 
+/* GWOTSC checksum parameter. */
+#define PH_GWOTSC_CHECKSUM_W 32
+#define PH_GWOTSC_CHECKSUM_LOGW 5
 
-/* --- WOTS+C Automatic Parameter Calculation --- */
-/* Winternitz parameter for the single checksum chain */
-#define SPX_WOTS_CHECKSUM_W 32
-#define SPX_WOTS_CHECKSUM_LOGW 5
-
-/*
- * Calculate the expected average sum (E) of the message chains.
- * Formula: E = Sum of (Length_i * (W_i - 1) / 2)
- * We multiply by Length first to avoid floating point issues in macros.
- */
-#define WOTS_EXPECTED_SUM (                   \
-    ((SPX_WOTS_W1_LEN * (SPX_WOTS_W1 - 1)) +  \
-     (SPX_WOTS_W2_LEN * (SPX_WOTS_W2 - 1))) / \
+/* Expected average sum of message chains. */
+#define GWOTSC_EXPECTED_SUM (                   \
+    ((PH_GWOTSC_W1_LEN * (PH_GWOTSC_W1 - 1)) +  \
+     (PH_GWOTSC_W2_LEN * (PH_GWOTSC_W2 - 1))) / \
     2)
 
-/*
- * WOTS_SUM_BASE: The starting point of the acceptable sum range.
- * We center the range around the expected average sum.
- */
-#define WOTS_SUM_BASE (WOTS_EXPECTED_SUM - (SPX_WOTS_CHECKSUM_W / 2))
+/* Acceptable sum range for counter search. */
+#define GWOTSC_SUM_BASE (GWOTSC_EXPECTED_SUM - (PH_GWOTSC_CHECKSUM_W / 2))
+#define GWOTSC_SUM_RANGE ((PH_GWOTSC_CHECKSUM_W) - 1)
 
-/*
- * WOTS_SUM_RANGE: The total number of sum values covered by one checksum chain.
- * For a chain with Winternitz parameter W, it can represent W distinct values (0 to W-1).
- */
-#define WOTS_SUM_RANGE ((SPX_WOTS_CHECKSUM_W) - 1)
-
-/*
- * Note: The valid sum interval is [WOTS_SUM_BASE, WOTS_SUM_BASE + WOTS_SUM_RANGE)
- * For n=128, W1=16, W2=32, W1_LEN=22, W2_LEN=8:
- * E = (22*15 + 8*31) / 2 = (330 + 248) / 2 = 289
- * BASE = 289 - 8 = 281
- * RANGE = 15
- */
-
-/* Resulting SPX sizes. */
-#define SPX_BYTES (SPX_N + COUNTER_SIZE + SPX_TFORS_SIG_MAX + SPX_D * (SPX_WOTS_BYTES + COUNTER_SIZE) + \
-                   SPX_FULL_HEIGHT * SPX_N)
-#define SPX_PK_BYTES (2 * SPX_N)
-#define SPX_SK_BYTES (2 * SPX_N + SPX_PK_BYTES)
+/* Resulting Phoenix signature sizes. */
+#define PH_BYTES (PH_N + COUNTER_SIZE + PH_TFORS_SIG_MAX + PH_D * (PH_GWOTSC_BYTES + COUNTER_SIZE) + \
+                   PH_FULL_HEIGHT * PH_N)
+#define PH_PK_BYTES (2 * PH_N)
+#define PH_SK_BYTES (2 * PH_N + PH_PK_BYTES)
 
 #include "../shake_offsets.h"
 
-#endif
+#endif /* PH_PARAMS_H */

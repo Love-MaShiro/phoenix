@@ -1,1 +1,0 @@
-/usr/bin/cc CMakeFiles/x4_benchmark.dir/test/x4_benchmark.c.o CMakeFiles/x4_benchmark.dir/test/cycles.c.o -o x4_benchmark  libspx_shake_ref.a 

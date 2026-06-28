@@ -1,30 +1,20 @@
-#ifndef SPX_CONTEXT_H
-#define SPX_CONTEXT_H
+#ifndef PH_CONTEXT_H
+#define PH_CONTEXT_H
 
 #include <stdint.h>
 
 #include "params.h"
 
 typedef struct {
-    uint8_t pub_seed[SPX_N];
-    uint8_t sk_seed[SPX_N];
+    uint8_t pub_seed[PH_N];
+    uint8_t sk_seed[PH_N];
 
-#ifdef SPX_SHA2
-    // sha256 state that absorbed pub_seed
-    uint8_t state_seeded[40];
-
-# ifdef SPX_SHA512
-    // sha512 state that absorbed pub_seed
-    uint8_t state_seeded_512[72];
-# endif
-#endif
-
-#ifdef SPX_SM3
+#ifdef PH_SM3
     // sm3 state that absorbed pub_seed
     uint8_t state_seeded_sm3[40];
 #endif
 
-#ifdef SPX_SHAKE
+#ifdef PH_SHAKE
     // shake256 state that absorbed pub_seed
     uint64_t state_seeded_shake[26];
 #endif

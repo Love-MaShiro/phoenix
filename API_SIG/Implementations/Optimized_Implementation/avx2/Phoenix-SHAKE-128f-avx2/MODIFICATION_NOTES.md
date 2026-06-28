@@ -23,7 +23,7 @@
 1. SHAKE 版本增加 `pub_seed` 预吸收状态缓存，减少重复 SHAKE 吸收开销。
 2. `hash_shake.c` 中的 `prf_addr()` 改为复用预吸收状态。
 3. `thash_shake_simple.c` 中的 `thash()` 改为复用预吸收状态。
-4. 所有 SHAKE 参数组的 `SPX_BYTES` 增加 2 字节，用于实际签名格式中保存
+4. 所有 SHAKE 参数组的 `PH_BYTES` 增加 2 字节，用于实际签名格式中保存
    TFORS 签名长度字段。
 5. `sign.c` 做了安全性修正：动态消息缓冲区、TFORS 长度校验、签名总长度
    校验、counter 溢出检查、`crypto_sign_open()` 边界检查。
@@ -41,7 +41,7 @@
 修改前：
 
 ```c
-#ifdef SPX_SM3
+#ifdef PH_SM3
     // sm3 state that absorbed pub_seed
     uint8_t state_seeded_sm3[40];
 #endif
@@ -54,12 +54,12 @@ uint32_t tweaked256_rc32[10][8];
 修改后：
 
 ```c
-#ifdef SPX_SM3
+#ifdef PH_SM3
     // sm3 state that absorbed pub_seed
     uint8_t state_seeded_sm3[40];
 #endif
 
-#ifdef SPX_SHAKE
+#ifdef PH_SHAKE
     // shake256 state that absorbed pub_seed
     uint64_t state_seeded_shake[26];
 #endif
@@ -103,7 +103,7 @@ void initialize_hash_function(spx_ctx* ctx)
 void initialize_hash_function(spx_ctx* ctx)
 {
     shake256_inc_init(ctx->state_seeded_shake);
-    shake256_inc_absorb(ctx->state_seeded_shake, ctx->pub_seed, SPX_N);
+    shake256_inc_absorb(ctx->state_seeded_shake, ctx->pub_seed, PH_N);
 }
 ```
 
@@ -121,13 +121,13 @@ void initialize_hash_function(spx_ctx* ctx)
 void prf_addr(unsigned char *out, const spx_ctx *ctx,
               const uint32_t addr[8])
 {
-    unsigned char buf[2*SPX_N + SPX_ADDR_BYTES];
+    unsigned char buf[2*PH_N + PH_ADDR_BYTES];
 
-    memcpy(buf, ctx->pub_seed, SPX_N);
-    memcpy(buf + SPX_N, addr, SPX_ADDR_BYTES);
-    memcpy(buf + SPX_N + SPX_ADDR_BYTES, ctx->sk_seed, SPX_N);
+    memcpy(buf, ctx->pub_seed, PH_N);
+    memcpy(buf + PH_N, addr, PH_ADDR_BYTES);
+    memcpy(buf + PH_N + PH_ADDR_BYTES, ctx->sk_seed, PH_N);
 
-    shake256(out, SPX_N, buf, 2*SPX_N + SPX_ADDR_BYTES);
+    shake256(out, PH_N, buf, 2*PH_N + PH_ADDR_BYTES);
 }
 ```
 
@@ -140,10 +140,10 @@ void prf_addr(unsigned char *out, const spx_ctx *ctx,
     uint64_t state[26];
 
     memcpy(state, ctx->state_seeded_shake, sizeof(state));
-    shake256_inc_absorb(state, (const unsigned char *)addr, SPX_ADDR_BYTES);
-    shake256_inc_absorb(state, ctx->sk_seed, SPX_N);
+    shake256_inc_absorb(state, (const unsigned char *)addr, PH_ADDR_BYTES);
+    shake256_inc_absorb(state, ctx->sk_seed, PH_N);
     shake256_inc_finalize(state);
-    shake256_inc_squeeze(out, SPX_N, state);
+    shake256_inc_squeeze(out, PH_N, state);
 }
 ```
 
@@ -173,13 +173,13 @@ void prf_addr(unsigned char *out, const spx_ctx *ctx,
 void thash(unsigned char *out, const unsigned char *in, unsigned int inblocks,
            const spx_ctx *ctx, uint32_t addr[8])
 {
-    SPX_VLA(uint8_t, buf, SPX_N + SPX_ADDR_BYTES + inblocks*SPX_N);
+    PH_VLA(uint8_t, buf, PH_N + PH_ADDR_BYTES + inblocks*PH_N);
 
-    memcpy(buf, ctx->pub_seed, SPX_N);
-    memcpy(buf + SPX_N, addr, SPX_ADDR_BYTES);
-    memcpy(buf + SPX_N + SPX_ADDR_BYTES, in, inblocks * SPX_N);
+    memcpy(buf, ctx->pub_seed, PH_N);
+    memcpy(buf + PH_N, addr, PH_ADDR_BYTES);
+    memcpy(buf + PH_N + PH_ADDR_BYTES, in, inblocks * PH_N);
 
-    shake256(out, SPX_N, buf, SPX_N + SPX_ADDR_BYTES + inblocks*SPX_N);
+    shake256(out, PH_N, buf, PH_N + PH_ADDR_BYTES + inblocks*PH_N);
 }
 ```
 
@@ -192,10 +192,10 @@ void thash(unsigned char *out, const unsigned char *in, unsigned int inblocks,
     uint64_t state[26];
 
     memcpy(state, ctx->state_seeded_shake, sizeof(state));
-    shake256_inc_absorb(state, (const unsigned char *)addr, SPX_ADDR_BYTES);
-    shake256_inc_absorb(state, in, inblocks * SPX_N);
+    shake256_inc_absorb(state, (const unsigned char *)addr, PH_ADDR_BYTES);
+    shake256_inc_absorb(state, in, inblocks * PH_N);
     shake256_inc_finalize(state);
-    shake256_inc_squeeze(out, SPX_N, state);
+    shake256_inc_squeeze(out, PH_N, state);
 }
 ```
 
@@ -205,7 +205,7 @@ void thash(unsigned char *out, const unsigned char *in, unsigned int inblocks,
 - 原始实现每次都从 `pub_seed` 开始构造完整输入并 one-shot `shake256()`。
 - 修改后复用 `state_seeded_shake`，避免重复吸收 `pub_seed`。
 - 输入语义仍等价于
-  `SHAKE256(pub_seed || addr || in, SPX_N)`。
+  `SHAKE256(pub_seed || addr || in, PH_N)`。
 
 `thash_init_bitmask()` 和 `thash_fin()`：
 
@@ -232,15 +232,15 @@ ref/params/params-phoenix-shake-512s.h
 修改前：
 
 ```c
-#define SPX_BYTES (SPX_N + COUNTER_SIZE + SPX_TFORS_SIG_MAX + SPX_D * (SPX_WOTS_BYTES + COUNTER_SIZE) + \
-                   SPX_FULL_HEIGHT * SPX_N)
+#define PH_BYTES (PH_N + COUNTER_SIZE + PH_TFORS_SIG_MAX + PH_D * (PH_WOTS_BYTES + COUNTER_SIZE) + \
+                   PH_FULL_HEIGHT * PH_N)
 ```
 
 修改后：
 
 ```c
-#define SPX_BYTES (SPX_N + COUNTER_SIZE + 2 + SPX_TFORS_SIG_MAX + SPX_D * (SPX_WOTS_BYTES + COUNTER_SIZE) + \
-                   SPX_FULL_HEIGHT * SPX_N)
+#define PH_BYTES (PH_N + COUNTER_SIZE + 2 + PH_TFORS_SIG_MAX + PH_D * (PH_WOTS_BYTES + COUNTER_SIZE) + \
+                   PH_FULL_HEIGHT * PH_N)
 ```
 
 修改原因：
@@ -252,7 +252,7 @@ ull_to_bytes(sig, 2, tfors_siglen);
 sig += 2;
 ```
 
-- 原始 SHAKE 参数头的 `SPX_BYTES` 没有把这 2 字节计入最大签名长度。
+- 原始 SHAKE 参数头的 `PH_BYTES` 没有把这 2 字节计入最大签名长度。
 - 若外部按 `CRYPTO_BYTES` 分配签名缓冲区，可能出现长度不足。
 - 因此所有 SHAKE 参数组统一补上 `+ 2`。
 
@@ -267,9 +267,9 @@ sig += 2;
 修改前：
 
 ```c
-#define SPX_MAX_MLEN 3300
+#define PH_MAX_MLEN 3300
 ...
-unsigned char mtmp[SPX_MAX_MLEN  + 4];
+unsigned char mtmp[PH_MAX_MLEN  + 4];
 ...
 memcpy(mtmp, m, mlen);
 ```
@@ -303,7 +303,7 @@ static unsigned char *alloc_message_buffer(const unsigned char *m, size_t mlen)
 
 修改原因：
 
-- 原始 `SPX_MAX_MLEN = 3300` 是固定上限。
+- 原始 `PH_MAX_MLEN = 3300` 是固定上限。
 - 当消息超过该长度时，`memcpy(mtmp, m, mlen)` 有越界风险。
 - 动态分配 `mlen + COUNTER_SIZE` 后，消息长度不再受硬编码栈数组限制。
 
@@ -312,7 +312,7 @@ static unsigned char *alloc_message_buffer(const unsigned char *m, size_t mlen)
 修改前：
 
 ```c
-*siglen = SPX_N + COUNTER_SIZE + 2 + tfors_siglen + SPX_D * (SPX_WOTS_BYTES + SPX_TREE_HEIGHT * SPX_N + COUNTER_SIZE);
+*siglen = PH_N + COUNTER_SIZE + 2 + tfors_siglen + PH_D * (PH_WOTS_BYTES + PH_TREE_HEIGHT * PH_N + COUNTER_SIZE);
 ```
 
 修改后：
@@ -320,8 +320,8 @@ static unsigned char *alloc_message_buffer(const unsigned char *m, size_t mlen)
 ```c
 static int signature_length_from_tfors(size_t tfors_siglen, size_t *siglen)
 {
-    const size_t wots_layer_len = SPX_WOTS_BYTES + SPX_TREE_HEIGHT * SPX_N + COUNTER_SIZE;
-    const size_t fixed_siglen = SPX_N + COUNTER_SIZE + 2 + (size_t)SPX_D * wots_layer_len;
+    const size_t wots_layer_len = PH_WOTS_BYTES + PH_TREE_HEIGHT * PH_N + COUNTER_SIZE;
+    const size_t fixed_siglen = PH_N + COUNTER_SIZE + 2 + (size_t)PH_D * wots_layer_len;
 
     if (tfors_siglen > SIZE_MAX - fixed_siglen) {
         return -1;
@@ -341,7 +341,7 @@ static int signature_length_from_tfors(size_t tfors_siglen, size_t *siglen)
 
 - 明确把签名固定部分和可变 TFORS 部分分开计算。
 - 对 `size_t` 加法做溢出检查。
-- 与第 4 节的 `SPX_BYTES + 2` 修正保持一致。
+- 与第 4 节的 `PH_BYTES + 2` 修正保持一致。
 
 ### 5.3 TFORS 签名长度校验
 
@@ -369,8 +369,8 @@ sig += 2;
 
 ```c
 message_to_indices(indices, mhash, &ctx);
-octopus_compute_auth_count(indices, SPX_TFORS_K, &tfors_auth_count);
-expected_tfors_siglen = SPX_TFORS_K * SPX_N + (size_t)tfors_auth_count * SPX_N;
+octopus_compute_auth_count(indices, PH_TFORS_K, &tfors_auth_count);
+expected_tfors_siglen = PH_TFORS_K * PH_N + (size_t)tfors_auth_count * PH_N;
 if (tfors_siglen != expected_tfors_siglen) {
     free(mtmp);
     return -1;
@@ -769,7 +769,7 @@ git diff -- ref/context.h ref/hash_shake.c ref/thash_shake_simple.c
 ### 确认 SHAKE 参数组都包含 `+ 2`
 
 ```sh
-rg -n "SPX_BYTES .*\\+ 2" ref/params/params-phoenix-shake-*.h
+rg -n "PH_BYTES .*\\+ 2" ref/params/params-phoenix-shake-*.h
 ```
 
 ### 确认 robust 文件已删除或不再参与构建

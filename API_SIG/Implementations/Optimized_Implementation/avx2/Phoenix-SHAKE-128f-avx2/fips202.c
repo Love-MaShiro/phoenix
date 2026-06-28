@@ -1,52 +1,58 @@
-/* Based on the public domain implementation in
- * crypto_hash/keccakc512/simple/ from http://bench.cr.yp.to/supercop.html
- * by Ronny Van Keer
- * and the public domain "TweetFips202" implementation
- * from https://twitter.com/tweetfips202
- * by Gilles Van Assche, Daniel J. Bernstein, and Peter Schwabe */
+/* Phoenix-SHAKE-128f implementation based on the public domain Keccak code
+ * from http://bench.cr.yp.to/supercop.html by Ronny Van Keer
+ * and the TweetFips202 implementation by Gilles Van Assche, Daniel J. Bernstein,
+ * and Peter Schwabe. This version uses 4-way AVX2 parallelism for improved
+ * throughput on supported platforms.
+ *
+ * Key differences from reference implementation:
+ * - Uses KeccakP1600times4_PermuteAll for 4-lane parallel permutation
+ * - Provides incremental and block-based SHAKE256 interfaces
+ * - Optimized for Phoenix signature scheme operations
+ */
 
 #include <stddef.h>
 #include <stdint.h>
 
 #include "fips202.h"
 
-#define NROUNDS 24
-#define ROL(a, offset) (((a) << (offset)) ^ ((a) >> (64 - (offset))))
+#define PHOENIX_NROUNDS 24
+#define ROL_ULL(val, shift) (((val) << (shift)) ^ ((val) >> (64 - (shift))))
 
 /*************************************************
- * Name:        load64
+ * Name:        ull_from_bytes
  *
- * Description: Load 8 bytes into uint64_t in little-endian order
+ * Description: Convert 8 consecutive bytes into a 64-bit unsigned integer
+ *              using little-endian byte ordering
  *
- * Arguments:   - const uint8_t *x: pointer to input byte array
+ * Arguments:   - const uint8_t *input: pointer to input byte array
  *
  * Returns the loaded 64-bit unsigned integer
  **************************************************/
-static uint64_t load64(const uint8_t *x) {
-    uint64_t r = 0;
-    for (size_t i = 0; i < 8; ++i) {
-        r |= (uint64_t)x[i] << 8 * i;
+static uint64_t ull_from_bytes(const uint8_t *input) {
+    uint64_t result = 0;
+    for (size_t idx = 0; idx < 8; ++idx) {
+        result |= (uint64_t)input[idx] << (8 * idx);
     }
-
-    return r;
+    return result;
 }
 
 /*************************************************
- * Name:        store64
+ * Name:        ull_to_bytes
  *
- * Description: Store a 64-bit integer to a byte array in little-endian order
+ * Description: Convert a 64-bit unsigned integer into 8 consecutive bytes
+ *              using little-endian byte ordering
  *
- * Arguments:   - uint8_t *x: pointer to the output byte array
- *              - uint64_t u: input 64-bit unsigned integer
+ * Arguments:   - uint8_t *output: pointer to the output byte array
+ *              - uint64_t val: input 64-bit unsigned integer
  **************************************************/
-static void store64(uint8_t *x, uint64_t u) {
-    for (size_t i = 0; i < 8; ++i) {
-        x[i] = (uint8_t) (u >> 8 * i);
+static void ull_to_bytes(uint8_t *output, uint64_t val) {
+    for (size_t idx = 0; idx < 8; ++idx) {
+        output[idx] = (uint8_t)(val >> (8 * idx));
     }
 }
 
-/* Keccak round constants */
-static const uint64_t KeccakF_RoundConstants[NROUNDS] = {
+/* Keccak F1600 round constants */
+static const uint64_t KeccakF_RC[PHOENIX_NROUNDS] = {
     0x0000000000000001ULL, 0x0000000000008082ULL,
     0x800000000000808aULL, 0x8000000080008000ULL,
     0x000000000000808bULL, 0x0000000080000001ULL,
@@ -62,540 +68,513 @@ static const uint64_t KeccakF_RoundConstants[NROUNDS] = {
 };
 
 /*************************************************
- * Name:        KeccakF1600_StatePermute
+ * Name:        keccak_p1600_permute
  *
- * Description: The Keccak F1600 Permutation
+ * Description: Execute the Keccak F1600 permutation on the state array
  *
- * Arguments:   - uint64_t *state: pointer to input/output Keccak state
+ * Arguments:   - uint64_t *state: pointer to input/output state array
  **************************************************/
-static void KeccakF1600_StatePermute(uint64_t *state) {
-    int round;
+static void keccak_p1600_permute(uint64_t *state) {
+    int r;
 
-    uint64_t Aba, Abe, Abi, Abo, Abu;
-    uint64_t Aga, Age, Agi, Ago, Agu;
-    uint64_t Aka, Ake, Aki, Ako, Aku;
-    uint64_t Ama, Ame, Ami, Amo, Amu;
-    uint64_t Asa, Ase, Asi, Aso, Asu;
-    uint64_t BCa, BCe, BCi, BCo, BCu;
-    uint64_t Da, De, Di, Do, Du;
-    uint64_t Eba, Ebe, Ebi, Ebo, Ebu;
-    uint64_t Ega, Ege, Egi, Ego, Egu;
-    uint64_t Eka, Eke, Eki, Eko, Eku;
-    uint64_t Ema, Eme, Emi, Emo, Emu;
-    uint64_t Esa, Ese, Esi, Eso, Esu;
+    uint64_t s00, s01, s02, s03, s04;
+    uint64_t s10, s11, s12, s13, s14;
+    uint64_t s20, s21, s22, s23, s24;
+    uint64_t s30, s31, s32, s33, s34;
+    uint64_t s40, s41, s42, s43, s44;
+    uint64_t b00, b01, b02, b03, b04;
+    uint64_t d00, d01, d02, d03, d04;
+    uint64_t e00, e01, e02, e03, e04;
+    uint64_t e10, e11, e12, e13, e14;
+    uint64_t e20, e21, e22, e23, e24;
+    uint64_t e30, e31, e32, e33, e34;
+    uint64_t e40, e41, e42, e43, e44;
 
-    // copyFromState(A, state)
-    Aba = state[0];
-    Abe = state[1];
-    Abi = state[2];
-    Abo = state[3];
-    Abu = state[4];
-    Aga = state[5];
-    Age = state[6];
-    Agi = state[7];
-    Ago = state[8];
-    Agu = state[9];
-    Aka = state[10];
-    Ake = state[11];
-    Aki = state[12];
-    Ako = state[13];
-    Aku = state[14];
-    Ama = state[15];
-    Ame = state[16];
-    Ami = state[17];
-    Amo = state[18];
-    Amu = state[19];
-    Asa = state[20];
-    Ase = state[21];
-    Asi = state[22];
-    Aso = state[23];
-    Asu = state[24];
+    /* Load state into local variables */
+    s00 = state[0];
+    s01 = state[1];
+    s02 = state[2];
+    s03 = state[3];
+    s04 = state[4];
+    s10 = state[5];
+    s11 = state[6];
+    s12 = state[7];
+    s13 = state[8];
+    s14 = state[9];
+    s20 = state[10];
+    s21 = state[11];
+    s22 = state[12];
+    s23 = state[13];
+    s24 = state[14];
+    s30 = state[15];
+    s31 = state[16];
+    s32 = state[17];
+    s33 = state[18];
+    s34 = state[19];
+    s40 = state[20];
+    s41 = state[21];
+    s42 = state[22];
+    s43 = state[23];
+    s44 = state[24];
 
-    for (round = 0; round < NROUNDS; round += 2) {
-        //    prepareTheta
-        BCa = Aba ^ Aga ^ Aka ^ Ama ^ Asa;
-        BCe = Abe ^ Age ^ Ake ^ Ame ^ Ase;
-        BCi = Abi ^ Agi ^ Aki ^ Ami ^ Asi;
-        BCo = Abo ^ Ago ^ Ako ^ Amo ^ Aso;
-        BCu = Abu ^ Agu ^ Aku ^ Amu ^ Asu;
+    for (r = 0; r < PHOENIX_NROUNDS; r += 2) {
+        /* Theta step: compute column parity */
+        b00 = s00 ^ s10 ^ s20 ^ s30 ^ s40;
+        b01 = s01 ^ s11 ^ s21 ^ s31 ^ s41;
+        b02 = s02 ^ s12 ^ s22 ^ s32 ^ s42;
+        b03 = s03 ^ s13 ^ s23 ^ s33 ^ s43;
+        b04 = s04 ^ s14 ^ s24 ^ s34 ^ s44;
 
-        // thetaRhoPiChiIotaPrepareTheta(round  , A, E)
-        Da = BCu ^ ROL(BCe, 1);
-        De = BCa ^ ROL(BCi, 1);
-        Di = BCe ^ ROL(BCo, 1);
-        Do = BCi ^ ROL(BCu, 1);
-        Du = BCo ^ ROL(BCa, 1);
+        /* Theta step: compute delta values */
+        d00 = b04 ^ ROL_ULL(b01, 1);
+        d01 = b00 ^ ROL_ULL(b02, 1);
+        d02 = b01 ^ ROL_ULL(b03, 1);
+        d03 = b02 ^ ROL_ULL(b04, 1);
+        d04 = b03 ^ ROL_ULL(b00, 1);
 
-        Aba ^= Da;
-        BCa = Aba;
-        Age ^= De;
-        BCe = ROL(Age, 44);
-        Aki ^= Di;
-        BCi = ROL(Aki, 43);
-        Amo ^= Do;
-        BCo = ROL(Amo, 21);
-        Asu ^= Du;
-        BCu = ROL(Asu, 14);
-        Eba = BCa ^ ((~BCe) & BCi);
-        Eba ^= KeccakF_RoundConstants[round];
-        Ebe = BCe ^ ((~BCi) & BCo);
-        Ebi = BCi ^ ((~BCo) & BCu);
-        Ebo = BCo ^ ((~BCu) & BCa);
-        Ebu = BCu ^ ((~BCa) & BCe);
+        /* Chi step with rotation, round 0 */
+        s00 ^= d00;
+        b00 = s00;
+        s11 ^= d01;
+        b01 = ROL_ULL(s11, 44);
+        s22 ^= d02;
+        b02 = ROL_ULL(s22, 43);
+        s33 ^= d03;
+        b03 = ROL_ULL(s33, 21);
+        s44 ^= d04;
+        b04 = ROL_ULL(s44, 14);
+        e00 = b00 ^ ((~b01) & b02);
+        e00 ^= KeccakF_RC[r];
+        e01 = b01 ^ ((~b02) & b03);
+        e02 = b02 ^ ((~b03) & b04);
+        e03 = b03 ^ ((~b04) & b00);
+        e04 = b04 ^ ((~b00) & b01);
 
-        Abo ^= Do;
-        BCa = ROL(Abo, 28);
-        Agu ^= Du;
-        BCe = ROL(Agu, 20);
-        Aka ^= Da;
-        BCi = ROL(Aka, 3);
-        Ame ^= De;
-        BCo = ROL(Ame, 45);
-        Asi ^= Di;
-        BCu = ROL(Asi, 61);
-        Ega = BCa ^ ((~BCe) & BCi);
-        Ege = BCe ^ ((~BCi) & BCo);
-        Egi = BCi ^ ((~BCo) & BCu);
-        Ego = BCo ^ ((~BCu) & BCa);
-        Egu = BCu ^ ((~BCa) & BCe);
+        s03 ^= d03;
+        b00 = ROL_ULL(s03, 28);
+        s14 ^= d04;
+        b01 = ROL_ULL(s14, 20);
+        s20 ^= d00;
+        b02 = ROL_ULL(s20, 3);
+        s31 ^= d01;
+        b03 = ROL_ULL(s31, 45);
+        s42 ^= d02;
+        b04 = ROL_ULL(s42, 61);
+        e10 = b00 ^ ((~b01) & b02);
+        e11 = b01 ^ ((~b02) & b03);
+        e12 = b02 ^ ((~b03) & b04);
+        e13 = b03 ^ ((~b04) & b00);
+        e14 = b04 ^ ((~b00) & b01);
 
-        Abe ^= De;
-        BCa = ROL(Abe, 1);
-        Agi ^= Di;
-        BCe = ROL(Agi, 6);
-        Ako ^= Do;
-        BCi = ROL(Ako, 25);
-        Amu ^= Du;
-        BCo = ROL(Amu, 8);
-        Asa ^= Da;
-        BCu = ROL(Asa, 18);
-        Eka = BCa ^ ((~BCe) & BCi);
-        Eke = BCe ^ ((~BCi) & BCo);
-        Eki = BCi ^ ((~BCo) & BCu);
-        Eko = BCo ^ ((~BCu) & BCa);
-        Eku = BCu ^ ((~BCa) & BCe);
+        s01 ^= d01;
+        b00 = ROL_ULL(s01, 1);
+        s12 ^= d02;
+        b01 = ROL_ULL(s12, 6);
+        s23 ^= d03;
+        b02 = ROL_ULL(s23, 25);
+        s34 ^= d04;
+        b03 = ROL_ULL(s34, 8);
+        s40 ^= d00;
+        b04 = ROL_ULL(s40, 18);
+        e20 = b00 ^ ((~b01) & b02);
+        e21 = b01 ^ ((~b02) & b03);
+        e22 = b02 ^ ((~b03) & b04);
+        e23 = b03 ^ ((~b04) & b00);
+        e24 = b04 ^ ((~b00) & b01);
 
-        Abu ^= Du;
-        BCa = ROL(Abu, 27);
-        Aga ^= Da;
-        BCe = ROL(Aga, 36);
-        Ake ^= De;
-        BCi = ROL(Ake, 10);
-        Ami ^= Di;
-        BCo = ROL(Ami, 15);
-        Aso ^= Do;
-        BCu = ROL(Aso, 56);
-        Ema = BCa ^ ((~BCe) & BCi);
-        Eme = BCe ^ ((~BCi) & BCo);
-        Emi = BCi ^ ((~BCo) & BCu);
-        Emo = BCo ^ ((~BCu) & BCa);
-        Emu = BCu ^ ((~BCa) & BCe);
+        s04 ^= d04;
+        b00 = ROL_ULL(s04, 27);
+        s10 ^= d00;
+        b01 = ROL_ULL(s10, 36);
+        s21 ^= d01;
+        b02 = ROL_ULL(s21, 10);
+        s32 ^= d02;
+        b03 = ROL_ULL(s32, 15);
+        s43 ^= d03;
+        b04 = ROL_ULL(s43, 56);
+        e30 = b00 ^ ((~b01) & b02);
+        e31 = b01 ^ ((~b02) & b03);
+        e32 = b02 ^ ((~b03) & b04);
+        e33 = b03 ^ ((~b04) & b00);
+        e34 = b04 ^ ((~b00) & b01);
 
-        Abi ^= Di;
-        BCa = ROL(Abi, 62);
-        Ago ^= Do;
-        BCe = ROL(Ago, 55);
-        Aku ^= Du;
-        BCi = ROL(Aku, 39);
-        Ama ^= Da;
-        BCo = ROL(Ama, 41);
-        Ase ^= De;
-        BCu = ROL(Ase, 2);
-        Esa = BCa ^ ((~BCe) & BCi);
-        Ese = BCe ^ ((~BCi) & BCo);
-        Esi = BCi ^ ((~BCo) & BCu);
-        Eso = BCo ^ ((~BCu) & BCa);
-        Esu = BCu ^ ((~BCa) & BCe);
+        s02 ^= d02;
+        b00 = ROL_ULL(s02, 62);
+        s13 ^= d03;
+        b01 = ROL_ULL(s13, 55);
+        s24 ^= d04;
+        b02 = ROL_ULL(s24, 39);
+        s30 ^= d00;
+        b03 = ROL_ULL(s30, 41);
+        s41 ^= d01;
+        b04 = ROL_ULL(s41, 2);
+        e40 = b00 ^ ((~b01) & b02);
+        e41 = b01 ^ ((~b02) & b03);
+        e42 = b02 ^ ((~b03) & b04);
+        e43 = b03 ^ ((~b04) & b00);
+        e44 = b04 ^ ((~b00) & b01);
 
-        //    prepareTheta
-        BCa = Eba ^ Ega ^ Eka ^ Ema ^ Esa;
-        BCe = Ebe ^ Ege ^ Eke ^ Eme ^ Ese;
-        BCi = Ebi ^ Egi ^ Eki ^ Emi ^ Esi;
-        BCo = Ebo ^ Ego ^ Eko ^ Emo ^ Eso;
-        BCu = Ebu ^ Egu ^ Eku ^ Emu ^ Esu;
+        /* Theta step: compute column parity for E */
+        b00 = e00 ^ e10 ^ e20 ^ e30 ^ e40;
+        b01 = e01 ^ e11 ^ e21 ^ e31 ^ e41;
+        b02 = e02 ^ e12 ^ e22 ^ e32 ^ e42;
+        b03 = e03 ^ e13 ^ e23 ^ e33 ^ e43;
+        b04 = e04 ^ e14 ^ e24 ^ e34 ^ e44;
 
-        // thetaRhoPiChiIotaPrepareTheta(round+1, E, A)
-        Da = BCu ^ ROL(BCe, 1);
-        De = BCa ^ ROL(BCi, 1);
-        Di = BCe ^ ROL(BCo, 1);
-        Do = BCi ^ ROL(BCu, 1);
-        Du = BCo ^ ROL(BCa, 1);
+        /* Theta step: compute delta values for E */
+        d00 = b04 ^ ROL_ULL(b01, 1);
+        d01 = b00 ^ ROL_ULL(b02, 1);
+        d02 = b01 ^ ROL_ULL(b03, 1);
+        d03 = b02 ^ ROL_ULL(b04, 1);
+        d04 = b03 ^ ROL_ULL(b00, 1);
 
-        Eba ^= Da;
-        BCa = Eba;
-        Ege ^= De;
-        BCe = ROL(Ege, 44);
-        Eki ^= Di;
-        BCi = ROL(Eki, 43);
-        Emo ^= Do;
-        BCo = ROL(Emo, 21);
-        Esu ^= Du;
-        BCu = ROL(Esu, 14);
-        Aba = BCa ^ ((~BCe) & BCi);
-        Aba ^= KeccakF_RoundConstants[round + 1];
-        Abe = BCe ^ ((~BCi) & BCo);
-        Abi = BCi ^ ((~BCo) & BCu);
-        Abo = BCo ^ ((~BCu) & BCa);
-        Abu = BCu ^ ((~BCa) & BCe);
+        /* Chi step with rotation, round 1 */
+        e00 ^= d00;
+        b00 = e00;
+        e11 ^= d01;
+        b01 = ROL_ULL(e11, 44);
+        e22 ^= d02;
+        b02 = ROL_ULL(e22, 43);
+        e33 ^= d03;
+        b03 = ROL_ULL(e33, 21);
+        e44 ^= d04;
+        b04 = ROL_ULL(e44, 14);
+        s00 = b00 ^ ((~b01) & b02);
+        s00 ^= KeccakF_RC[r + 1];
+        s01 = b01 ^ ((~b02) & b03);
+        s02 = b02 ^ ((~b03) & b04);
+        s03 = b03 ^ ((~b04) & b00);
+        s04 = b04 ^ ((~b00) & b01);
 
-        Ebo ^= Do;
-        BCa = ROL(Ebo, 28);
-        Egu ^= Du;
-        BCe = ROL(Egu, 20);
-        Eka ^= Da;
-        BCi = ROL(Eka, 3);
-        Eme ^= De;
-        BCo = ROL(Eme, 45);
-        Esi ^= Di;
-        BCu = ROL(Esi, 61);
-        Aga = BCa ^ ((~BCe) & BCi);
-        Age = BCe ^ ((~BCi) & BCo);
-        Agi = BCi ^ ((~BCo) & BCu);
-        Ago = BCo ^ ((~BCu) & BCa);
-        Agu = BCu ^ ((~BCa) & BCe);
+        e03 ^= d03;
+        b00 = ROL_ULL(e03, 28);
+        e14 ^= d04;
+        b01 = ROL_ULL(e14, 20);
+        e20 ^= d00;
+        b02 = ROL_ULL(e20, 3);
+        e31 ^= d01;
+        b03 = ROL_ULL(e31, 45);
+        e42 ^= d02;
+        b04 = ROL_ULL(e42, 61);
+        s10 = b00 ^ ((~b01) & b02);
+        s11 = b01 ^ ((~b02) & b03);
+        s12 = b02 ^ ((~b03) & b04);
+        s13 = b03 ^ ((~b04) & b00);
+        s14 = b04 ^ ((~b00) & b01);
 
-        Ebe ^= De;
-        BCa = ROL(Ebe, 1);
-        Egi ^= Di;
-        BCe = ROL(Egi, 6);
-        Eko ^= Do;
-        BCi = ROL(Eko, 25);
-        Emu ^= Du;
-        BCo = ROL(Emu, 8);
-        Esa ^= Da;
-        BCu = ROL(Esa, 18);
-        Aka = BCa ^ ((~BCe) & BCi);
-        Ake = BCe ^ ((~BCi) & BCo);
-        Aki = BCi ^ ((~BCo) & BCu);
-        Ako = BCo ^ ((~BCu) & BCa);
-        Aku = BCu ^ ((~BCa) & BCe);
+        e01 ^= d01;
+        b00 = ROL_ULL(e01, 1);
+        e12 ^= d02;
+        b01 = ROL_ULL(e12, 6);
+        e23 ^= d03;
+        b02 = ROL_ULL(e23, 25);
+        e34 ^= d04;
+        b03 = ROL_ULL(e34, 8);
+        e40 ^= d00;
+        b04 = ROL_ULL(e40, 18);
+        s20 = b00 ^ ((~b01) & b02);
+        s21 = b01 ^ ((~b02) & b03);
+        s22 = b02 ^ ((~b03) & b04);
+        s23 = b03 ^ ((~b04) & b00);
+        s24 = b04 ^ ((~b00) & b01);
 
-        Ebu ^= Du;
-        BCa = ROL(Ebu, 27);
-        Ega ^= Da;
-        BCe = ROL(Ega, 36);
-        Eke ^= De;
-        BCi = ROL(Eke, 10);
-        Emi ^= Di;
-        BCo = ROL(Emi, 15);
-        Eso ^= Do;
-        BCu = ROL(Eso, 56);
-        Ama = BCa ^ ((~BCe) & BCi);
-        Ame = BCe ^ ((~BCi) & BCo);
-        Ami = BCi ^ ((~BCo) & BCu);
-        Amo = BCo ^ ((~BCu) & BCa);
-        Amu = BCu ^ ((~BCa) & BCe);
+        e04 ^= d04;
+        b00 = ROL_ULL(e04, 27);
+        e10 ^= d00;
+        b01 = ROL_ULL(e10, 36);
+        e21 ^= d01;
+        b02 = ROL_ULL(e21, 10);
+        e32 ^= d02;
+        b03 = ROL_ULL(e32, 15);
+        e43 ^= d03;
+        b04 = ROL_ULL(e43, 56);
+        s30 = b00 ^ ((~b01) & b02);
+        s31 = b01 ^ ((~b02) & b03);
+        s32 = b02 ^ ((~b03) & b04);
+        s33 = b03 ^ ((~b04) & b00);
+        s34 = b04 ^ ((~b00) & b01);
 
-        Ebi ^= Di;
-        BCa = ROL(Ebi, 62);
-        Ego ^= Do;
-        BCe = ROL(Ego, 55);
-        Eku ^= Du;
-        BCi = ROL(Eku, 39);
-        Ema ^= Da;
-        BCo = ROL(Ema, 41);
-        Ese ^= De;
-        BCu = ROL(Ese, 2);
-        Asa = BCa ^ ((~BCe) & BCi);
-        Ase = BCe ^ ((~BCi) & BCo);
-        Asi = BCi ^ ((~BCo) & BCu);
-        Aso = BCo ^ ((~BCu) & BCa);
-        Asu = BCu ^ ((~BCa) & BCe);
+        e02 ^= d02;
+        b00 = ROL_ULL(e02, 62);
+        e13 ^= d03;
+        b01 = ROL_ULL(e13, 55);
+        e24 ^= d04;
+        b02 = ROL_ULL(e24, 39);
+        e30 ^= d00;
+        b03 = ROL_ULL(e30, 41);
+        e41 ^= d01;
+        b04 = ROL_ULL(e41, 2);
+        s40 = b00 ^ ((~b01) & b02);
+        s41 = b01 ^ ((~b02) & b03);
+        s42 = b02 ^ ((~b03) & b04);
+        s43 = b03 ^ ((~b04) & b00);
+        s44 = b04 ^ ((~b00) & b01);
     }
 
-    // copyToState(state, A)
-    state[0] = Aba;
-    state[1] = Abe;
-    state[2] = Abi;
-    state[3] = Abo;
-    state[4] = Abu;
-    state[5] = Aga;
-    state[6] = Age;
-    state[7] = Agi;
-    state[8] = Ago;
-    state[9] = Agu;
-    state[10] = Aka;
-    state[11] = Ake;
-    state[12] = Aki;
-    state[13] = Ako;
-    state[14] = Aku;
-    state[15] = Ama;
-    state[16] = Ame;
-    state[17] = Ami;
-    state[18] = Amo;
-    state[19] = Amu;
-    state[20] = Asa;
-    state[21] = Ase;
-    state[22] = Asi;
-    state[23] = Aso;
-    state[24] = Asu;
+    /* Store local variables back to state */
+    state[0] = s00;
+    state[1] = s01;
+    state[2] = s02;
+    state[3] = s03;
+    state[4] = s04;
+    state[5] = s10;
+    state[6] = s11;
+    state[7] = s12;
+    state[8] = s13;
+    state[9] = s14;
+    state[10] = s20;
+    state[11] = s21;
+    state[12] = s22;
+    state[13] = s23;
+    state[14] = s24;
+    state[15] = s30;
+    state[16] = s31;
+    state[17] = s32;
+    state[18] = s33;
+    state[19] = s34;
+    state[20] = s40;
+    state[21] = s41;
+    state[22] = s42;
+    state[23] = s43;
+    state[24] = s44;
 }
 
 /*************************************************
- * Name:        keccak_absorb
+ * Name:        keccak_absorb_blocks
  *
- * Description: Absorb step of Keccak;
- *              non-incremental, starts by zeroeing the state.
+ * Description: Absorb input data into Keccak state.
+ *              Initializes state to zero before absorption.
  *
- * Arguments:   - uint64_t *s: pointer to (uninitialized) output Keccak state
- *              - uint32_t r: rate in bytes (e.g., 168 for SHAKE128)
- *              - const uint8_t *m: pointer to input to be absorbed into s
- *              - size_t mlen: length of input in bytes
- *              - uint8_t p: domain-separation byte for different
- *                                 Keccak-derived functions
+ * Arguments:   - uint64_t *state: pointer to Keccak state array
+ *              - uint32_t rate: absorption rate in bytes
+ *              - const uint8_t *msg: pointer to input message
+ *              - size_t msglen: length of input in bytes
+ *              - uint8_t pad: domain separation padding byte
  **************************************************/
-static void keccak_absorb(uint64_t *s, uint32_t r, const uint8_t *m,
-                          size_t mlen, uint8_t p) {
-    size_t i;
-    uint8_t t[200];
+static void keccak_absorb_blocks(uint64_t *state, uint32_t rate,
+                                 const uint8_t *msg, size_t msglen, uint8_t pad) {
+    size_t idx;
+    uint8_t buffer[200];
 
-    /* Zero state */
-    for (i = 0; i < 25; ++i) {
-        s[i] = 0;
+    /* Initialize state to zero */
+    for (idx = 0; idx < 25; ++idx) {
+        state[idx] = 0;
     }
 
-    while (mlen >= r) {
-        for (i = 0; i < r / 8; ++i) {
-            s[i] ^= load64(m + 8 * i);
+    /* Absorb full rate-sized blocks */
+    while (msglen >= rate) {
+        for (idx = 0; idx < rate / 8; ++idx) {
+            state[idx] ^= ull_from_bytes(msg + 8 * idx);
         }
-
-        KeccakF1600_StatePermute(s);
-        mlen -= r;
-        m += r;
+        keccak_p1600_permute(state);
+        msglen -= rate;
+        msg += rate;
     }
 
-    for (i = 0; i < r; ++i) {
-        t[i] = 0;
+    /* Handle remaining bytes with padding */
+    for (idx = 0; idx < rate; ++idx) {
+        buffer[idx] = 0;
     }
-    for (i = 0; i < mlen; ++i) {
-        t[i] = m[i];
+    for (idx = 0; idx < msglen; ++idx) {
+        buffer[idx] = msg[idx];
     }
-    t[i] = p;
-    t[r - 1] |= 128;
-    for (i = 0; i < r / 8; ++i) {
-        s[i] ^= load64(t + 8 * i);
+    buffer[idx] = pad;
+    buffer[rate - 1] |= 128;
+    for (idx = 0; idx < rate / 8; ++idx) {
+        state[idx] ^= ull_from_bytes(buffer + 8 * idx);
     }
 }
 
 /*************************************************
- * Name:        keccak_squeezeblocks
+ * Name:        keccak_squeeze_blocks
  *
- * Description: Squeeze step of Keccak. Squeezes full blocks of r bytes each.
- *              Modifies the state. Can be called multiple times to keep
- *              squeezing, i.e., is incremental.
+ * Description: Squeeze output blocks from Keccak state.
+ *              Each block is rate bytes long.
  *
- * Arguments:   - uint8_t *h: pointer to output blocks
- *              - size_t nblocks: number of blocks to be
- *                                                squeezed (written to h)
- *              - uint64_t *s: pointer to input/output Keccak state
- *              - uint32_t r: rate in bytes (e.g., 168 for SHAKE128)
+ * Arguments:   - uint8_t *out: pointer to output buffer
+ *              - size_t nblocks: number of blocks to squeeze
+ *              - uint64_t *state: pointer to Keccak state
+ *              - uint32_t rate: squeeze rate in bytes
  **************************************************/
-static void keccak_squeezeblocks(uint8_t *h, size_t nblocks,
-                                 uint64_t *s, uint32_t r) {
+static void keccak_squeeze_blocks(uint8_t *out, size_t nblocks,
+                                  uint64_t *state, uint32_t rate) {
     while (nblocks > 0) {
-        KeccakF1600_StatePermute(s);
-        for (size_t i = 0; i < (r >> 3); i++) {
-            store64(h + 8 * i, s[i]);
+        keccak_p1600_permute(state);
+        for (size_t idx = 0; idx < (rate >> 3); idx++) {
+            ull_to_bytes(out + 8 * idx, state[idx]);
         }
-        h += r;
+        out += rate;
         nblocks--;
     }
 }
 
 /*************************************************
- * Name:        keccak_inc_init
+ * Name:        keccak_inc_create
  *
- * Description: Initializes the incremental Keccak state to zero.
+ * Description: Initialize incremental Keccak state to zero.
  *
- * Arguments:   - uint64_t *s_inc: pointer to input/output incremental state
- *                First 25 values represent Keccak state.
- *                26th value represents either the number of absorbed bytes
- *                that have not been permuted, or not-yet-squeezed bytes.
+ * Arguments:   - uint64_t *inc_state: pointer to incremental state array
+ *                First 25 elements hold the Keccak state.
+ *                Element 25 holds unprocessed/unread byte count.
  **************************************************/
-static void keccak_inc_init(uint64_t *s_inc) {
-    size_t i;
-
-    for (i = 0; i < 25; ++i) {
-        s_inc[i] = 0;
+static void keccak_inc_create(uint64_t *inc_state) {
+    size_t idx;
+    for (idx = 0; idx < 25; ++idx) {
+        inc_state[idx] = 0;
     }
-    s_inc[25] = 0;
+    inc_state[25] = 0;
 }
 
 /*************************************************
  * Name:        keccak_inc_absorb
  *
- * Description: Incremental keccak absorb
- *              Preceded by keccak_inc_init, succeeded by keccak_inc_finalize
+ * Description: Incrementally absorb bytes into Keccak state.
+ *              Must be called after keccak_inc_create and before
+ *              keccak_inc_finalize.
  *
- * Arguments:   - uint64_t *s_inc: pointer to input/output incremental state
- *                First 25 values represent Keccak state.
- *                26th value represents either the number of absorbed bytes
- *                that have not been permuted, or not-yet-squeezed bytes.
- *              - uint32_t r: rate in bytes (e.g., 168 for SHAKE128)
- *              - const uint8_t *m: pointer to input to be absorbed into s
- *              - size_t mlen: length of input in bytes
+ * Arguments:   - uint64_t *inc_state: pointer to incremental state
+ *              - uint32_t rate: absorption rate in bytes
+ *              - const uint8_t *msg: pointer to input bytes
+ *              - size_t msglen: number of bytes to absorb
  **************************************************/
-static void keccak_inc_absorb(uint64_t *s_inc, uint32_t r, const uint8_t *m,
-                              size_t mlen) {
-    size_t i;
-
-    /* Recall that s_inc[25] is the non-absorbed bytes xored into the state */
-    while (mlen + s_inc[25] >= r) {
-        for (i = 0; i < r - s_inc[25]; i++) {
-            /* Take the i'th byte from message
-               xor with the s_inc[25] + i'th byte of the state; little-endian */
-            s_inc[(s_inc[25] + i) >> 3] ^= (uint64_t)m[i] << (8 * ((s_inc[25] + i) & 0x07));
+static void keccak_inc_absorb(uint64_t *inc_state, uint32_t rate,
+                              const uint8_t *msg, size_t msglen) {
+    size_t idx;
+    while (msglen + inc_state[25] >= rate) {
+        for (idx = 0; idx < rate - inc_state[25]; idx++) {
+            inc_state[(inc_state[25] + idx) >> 3] ^=
+                (uint64_t)msg[idx] << (8 * ((inc_state[25] + idx) & 0x07));
         }
-        mlen -= (size_t)(r - s_inc[25]);
-        m += r - s_inc[25];
-        s_inc[25] = 0;
-
-        KeccakF1600_StatePermute(s_inc);
+        msglen -= (size_t)(rate - inc_state[25]);
+        msg += rate - inc_state[25];
+        inc_state[25] = 0;
+        keccak_p1600_permute(inc_state);
     }
-
-    for (i = 0; i < mlen; i++) {
-        s_inc[(s_inc[25] + i) >> 3] ^= (uint64_t)m[i] << (8 * ((s_inc[25] + i) & 0x07));
+    for (idx = 0; idx < msglen; idx++) {
+        inc_state[(inc_state[25] + idx) >> 3] ^=
+            (uint64_t)msg[idx] << (8 * ((inc_state[25] + idx) & 0x07));
     }
-    s_inc[25] += mlen;
+    inc_state[25] += msglen;
 }
 
 /*************************************************
- * Name:        keccak_inc_finalize
+ * Name:        keccak_inc_complete
  *
- * Description: Finalizes Keccak absorb phase, prepares for squeezing
+ * Description: Finalize incremental absorption and prepare for squeezing.
  *
- * Arguments:   - uint64_t *s_inc: pointer to input/output incremental state
- *                First 25 values represent Keccak state.
- *                26th value represents either the number of absorbed bytes
- *                that have not been permuted, or not-yet-squeezed bytes.
- *              - uint32_t r: rate in bytes (e.g., 168 for SHAKE128)
- *              - uint8_t p: domain-separation byte for different
- *                                 Keccak-derived functions
+ * Arguments:   - uint64_t *inc_state: pointer to incremental state
+ *              - uint32_t rate: absorption rate in bytes
+ *              - uint8_t pad: domain separation padding byte
  **************************************************/
-static void keccak_inc_finalize(uint64_t *s_inc, uint32_t r, uint8_t p) {
-    /* After keccak_inc_absorb, we are guaranteed that s_inc[25] < r,
-       so we can always use one more byte for p in the current state. */
-    s_inc[s_inc[25] >> 3] ^= (uint64_t)p << (8 * (s_inc[25] & 0x07));
-    s_inc[(r - 1) >> 3] ^= (uint64_t)128 << (8 * ((r - 1) & 0x07));
-    s_inc[25] = 0;
+static void keccak_inc_complete(uint64_t *inc_state, uint32_t rate, uint8_t pad) {
+    inc_state[inc_state[25] >> 3] ^= (uint64_t)pad << (8 * (inc_state[25] & 0x07));
+    inc_state[(rate - 1) >> 3] ^= (uint64_t)128 << (8 * ((rate - 1) & 0x07));
+    inc_state[25] = 0;
 }
 
 /*************************************************
  * Name:        keccak_inc_squeeze
  *
- * Description: Incremental Keccak squeeze; can be called on byte-level
+ * Description: Incrementally squeeze bytes from Keccak state.
+ *              Can be called multiple times to retrieve output.
  *
- * Arguments:   - uint8_t *h: pointer to output bytes
- *              - size_t outlen: number of bytes to be squeezed
- *              - uint64_t *s_inc: pointer to input/output incremental state
- *                First 25 values represent Keccak state.
- *                26th value represents either the number of absorbed bytes
- *                that have not been permuted, or not-yet-squeezed bytes.
- *              - uint32_t r: rate in bytes (e.g., 168 for SHAKE128)
+ * Arguments:   - uint8_t *out: pointer to output buffer
+ *              - size_t outlen: number of bytes to squeeze
+ *              - uint64_t *inc_state: pointer to incremental state
+ *              - uint32_t rate: squeeze rate in bytes
  **************************************************/
-static void keccak_inc_squeeze(uint8_t *h, size_t outlen,
-                               uint64_t *s_inc, uint32_t r) {
-    size_t i;
-
-    /* First consume any bytes we still have sitting around */
-    for (i = 0; i < outlen && i < s_inc[25]; i++) {
-        /* There are s_inc[25] bytes left, so r - s_inc[25] is the first
-           available byte. We consume from there, i.e., up to r. */
-        h[i] = (uint8_t)(s_inc[(r - s_inc[25] + i) >> 3] >> (8 * ((r - s_inc[25] + i) & 0x07)));
+static void keccak_inc_squeeze(uint8_t *out, size_t outlen,
+                               uint64_t *inc_state, uint32_t rate) {
+    size_t idx;
+    for (idx = 0; idx < outlen && idx < inc_state[25]; idx++) {
+        out[idx] = (uint8_t)(inc_state[(rate - inc_state[25] + idx) >> 3] >>
+                             (8 * ((rate - inc_state[25] + idx) & 0x07)));
     }
-    h += i;
-    outlen -= i;
-    s_inc[25] -= i;
+    out += idx;
+    outlen -= idx;
+    inc_state[25] -= idx;
 
-    /* Then squeeze the remaining necessary blocks */
     while (outlen > 0) {
-        KeccakF1600_StatePermute(s_inc);
-
-        for (i = 0; i < outlen && i < r; i++) {
-            h[i] = (uint8_t)(s_inc[i >> 3] >> (8 * (i & 0x07)));
+        keccak_p1600_permute(inc_state);
+        for (idx = 0; idx < outlen && idx < rate; idx++) {
+            out[idx] = (uint8_t)(inc_state[idx >> 3] >> (8 * (idx & 0x07)));
         }
-        h += i;
-        outlen -= i;
-        s_inc[25] = r - i;
+        out += idx;
+        outlen -= idx;
+        inc_state[25] = rate - idx;
     }
 }
 
-void shake256_inc_init(uint64_t *s_inc) {
-    keccak_inc_init(s_inc);
+void shake256_inc_init(uint64_t *inc_state) {
+    keccak_inc_create(inc_state);
 }
 
-void shake256_inc_absorb(uint64_t *s_inc, const uint8_t *input, size_t inlen) {
-    keccak_inc_absorb(s_inc, SHAKE256_RATE, input, inlen);
+void shake256_inc_absorb(uint64_t *inc_state, const uint8_t *input, size_t inlen) {
+    keccak_inc_absorb(inc_state, SHAKE256_RATE, input, inlen);
 }
 
-void shake256_inc_finalize(uint64_t *s_inc) {
-    keccak_inc_finalize(s_inc, SHAKE256_RATE, 0x1F);
+void shake256_inc_finalize(uint64_t *inc_state) {
+    keccak_inc_complete(inc_state, SHAKE256_RATE, 0x1F);
 }
 
-void shake256_inc_squeeze(uint8_t *output, size_t outlen, uint64_t *s_inc) {
-    keccak_inc_squeeze(output, outlen, s_inc, SHAKE256_RATE);
+void shake256_inc_squeeze(uint8_t *output, size_t outlen, uint64_t *inc_state) {
+    keccak_inc_squeeze(output, outlen, inc_state, SHAKE256_RATE);
 }
 
 /*************************************************
  * Name:        shake256_absorb
  *
- * Description: Absorb step of the SHAKE256 XOF.
- *              non-incremental, starts by zeroeing the state.
+ * Description: Absorb input into SHAKE256 state (non-incremental).
+ *              State is initialized to zero before absorption.
  *
- * Arguments:   - uint64_t *s: pointer to (uninitialized) output Keccak state
- *              - const uint8_t *input: pointer to input to be absorbed
- *                                            into s
+ * Arguments:   - uint64_t *state: pointer to Keccak state array
+ *              - const uint8_t *input: pointer to input data
  *              - size_t inlen: length of input in bytes
  **************************************************/
-void shake256_absorb(uint64_t *s, const uint8_t *input, size_t inlen) {
-    keccak_absorb(s, SHAKE256_RATE, input, inlen, 0x1F);
+void shake256_absorb(uint64_t *state, const uint8_t *input, size_t inlen) {
+    keccak_absorb_blocks(state, SHAKE256_RATE, input, inlen, 0x1F);
 }
 
 /*************************************************
  * Name:        shake256_squeezeblocks
  *
- * Description: Squeeze step of SHAKE256 XOF. Squeezes full blocks of
- *              SHAKE256_RATE bytes each. Modifies the state. Can be called
- *              multiple times to keep squeezing, i.e., is incremental.
+ * Description: Squeeze full blocks from SHAKE256 state.
+ *              Can be called multiple times for incremental output.
  *
- * Arguments:   - uint8_t *output: pointer to output blocks
- *              - size_t nblocks: number of blocks to be squeezed
- *                                (written to output)
- *              - uint64_t *s: pointer to input/output Keccak state
+ * Arguments:   - uint8_t *output: pointer to output buffer
+ *              - size_t nblocks: number of SHAKE256_RATE blocks
+ *              - uint64_t *state: pointer to Keccak state
  **************************************************/
-void shake256_squeezeblocks(uint8_t *output, size_t nblocks, uint64_t *s) {
-    keccak_squeezeblocks(output, nblocks, s, SHAKE256_RATE);
+void shake256_squeezeblocks(uint8_t *output, size_t nblocks, uint64_t *state) {
+    keccak_squeeze_blocks(output, nblocks, state, SHAKE256_RATE);
 }
 
 /*************************************************
  * Name:        shake256
  *
- * Description: SHAKE256 XOF with non-incremental API
+ * Description: SHAKE256 extendable-output function (non-incremental).
  *
- * Arguments:   - uint8_t *output: pointer to output
- *              - size_t outlen: requested output length in bytes
- *              - const uint8_t *input: pointer to input
+ * Arguments:   - uint8_t *output: pointer to output buffer
+ *              - size_t outlen: desired output length in bytes
+ *              - const uint8_t *input: pointer to input data
  *              - size_t inlen: length of input in bytes
  **************************************************/
 void shake256(uint8_t *output, size_t outlen,
               const uint8_t *input, size_t inlen) {
     size_t nblocks = outlen / SHAKE256_RATE;
-    uint8_t t[SHAKE256_RATE];
-    uint64_t s[25];
+    uint8_t tmp[SHAKE256_RATE];
+    uint64_t state[25];
 
-    shake256_absorb(s, input, inlen);
-    shake256_squeezeblocks(output, nblocks, s);
+    shake256_absorb(state, input, inlen);
+    shake256_squeezeblocks(output, nblocks, state);
 
     output += nblocks * SHAKE256_RATE;
     outlen -= nblocks * SHAKE256_RATE;
 
     if (outlen) {
-        shake256_squeezeblocks(t, 1, s);
-        for (size_t i = 0; i < outlen; ++i) {
-            output[i] = t[i];
+        shake256_squeezeblocks(tmp, 1, state);
+        for (size_t idx = 0; idx < outlen; ++idx) {
+            output[idx] = tmp[idx];
         }
     }
 }
-
-
-

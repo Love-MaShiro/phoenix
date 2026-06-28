@@ -1,11 +1,11 @@
-#ifndef SPX_HASHX4_H
-#define SPX_HASHX4_H
+#ifndef PH_HASHX4_H
+#define PH_HASHX4_H
 
 #include <stdint.h>
 #include "context.h"
 #include "params.h"
 
-#define prf_addrx4 SPX_NAMESPACE(prf_addrx4)
+#define prf_addrx4 PH_NAMESPACE(prf_addrx4)
 void prf_addrx4(unsigned char *out0,
                 unsigned char *out1,
                 unsigned char *out2,

@@ -12,8 +12,23 @@ other purposes.
 #include "SIG_AlgorithmInstance.h"
 #include "drng.h"
 #include "api.h"
+#include "counter.h"
+#include "params.h"
+#include "gwotsc.h"
+#include "tfors.h"
+#include "octopus.h"
+#include "hash.h"
+#include "thash.h"
+#include "address.h"
+#include "randombytes.h"
+#include "utils.h"
+#include "merkle.h"
 
+#include <stddef.h>
+#include <string.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 // DRNG_ctx for generating pseudorandom numbers within the SIG scheme
 extern DRNG_ctx drng_algorithm;
@@ -26,6 +41,405 @@ extern DRNG_ctx drng_algorithm;
 #define SIG_INVALID_ARGUMENT -2
 #define SIG_RANDOM_FAILED -3
 #define SIG_CRYPTO_FAILED -4
+
+static unsigned char *alloc_message_buffer(const unsigned char *m, size_t mlen)
+{
+    unsigned char *mtmp;
+
+    if (mlen > SIZE_MAX - COUNTER_SIZE) {
+        return NULL;
+    }
+
+    mtmp = malloc(mlen + COUNTER_SIZE);
+    if (mtmp == NULL) {
+        return NULL;
+    }
+
+    memcpy(mtmp, m, mlen);
+    return mtmp;
+}
+
+static int signature_length_from_tfors(size_t tfors_siglen, size_t *siglen)
+{
+    const size_t gwotsc_layer_len = PH_GWOTSC_BYTES + PH_TREE_HEIGHT * PH_N + COUNTER_SIZE;
+    const size_t fixed_siglen = PH_N + COUNTER_SIZE + 2 + (size_t)PH_D * gwotsc_layer_len;
+
+    if (tfors_siglen > SIZE_MAX - fixed_siglen) {
+        return -1;
+    }
+
+    *siglen = fixed_siglen + tfors_siglen;
+    return 0;
+}
+
+static int tfors_siglen_is_valid(size_t tfors_siglen)
+{
+    const size_t tfors_sig_min = (size_t)PH_TFORS_K * PH_N;
+
+    return tfors_siglen >= tfors_sig_min && tfors_siglen <= PH_TFORS_SIG_MAX;
+}
+
+/*
+ * Returns the length of a secret key, in bytes
+ */
+unsigned long long crypto_sign_secretkeybytes(void)
+{
+    return CRYPTO_SECRETKEYBYTES;
+}
+
+/*
+ * Returns the length of a public key, in bytes
+ */
+unsigned long long crypto_sign_publickeybytes(void)
+{
+    return CRYPTO_PUBLICKEYBYTES;
+}
+
+/*
+ * Returns the length of a signature, in bytes
+ */
+unsigned long long crypto_sign_bytes(void)
+{
+    return CRYPTO_BYTES;
+}
+
+/*
+ * Returns the length of the seed required to generate a key pair, in bytes
+ */
+unsigned long long crypto_sign_seedbytes(void)
+{
+    return CRYPTO_SEEDBYTES;
+}
+
+/*
+ * Generates an PH key pair given a seed of length
+ * Format sk: [SK_SEED || SK_PRF || PUB_SEED || root]
+ * Format pk: [PUB_SEED || root]
+ */
+int crypto_sign_seed_keypair(unsigned char *pk, unsigned char *sk,
+                             const unsigned char *seed)
+{
+    spx_ctx ctx;
+
+    /* Initialize SK_SEED, SK_PRF and PUB_SEED from seed. */
+    memcpy(sk, seed, CRYPTO_SEEDBYTES);
+
+    memcpy(pk, sk + 2*PH_N, PH_N);
+
+    memcpy(ctx.pub_seed, pk, PH_N);
+    memcpy(ctx.sk_seed, sk, PH_N);
+
+    /* This hook allows the hash function instantiation to do whatever
+       preparation or computation it needs, based on the public seed. */
+    initialize_hash_function(&ctx);
+
+    /* Compute root node of the top-most subtree. */
+    merkle_gen_root(sk + 3*PH_N, &ctx);
+
+    memcpy(pk + PH_N, sk + 3*PH_N, PH_N);
+
+    return 0;
+}
+
+/*
+ * Generates an PH key pair.
+ * Format sk: [SK_SEED || SK_PRF || PUB_SEED || root]
+ * Format pk: [PUB_SEED || root]
+ */
+int crypto_sign_keypair(unsigned char *pk, unsigned char *sk)
+{
+  unsigned char seed[CRYPTO_SEEDBYTES];
+  randombytes(seed, CRYPTO_SEEDBYTES);
+  crypto_sign_seed_keypair(pk, sk, seed);
+
+  return 0;
+}
+
+/**
+ * Returns an array containing a detached signature.
+ */
+int crypto_sign_signature(uint8_t *sig, size_t *siglen, size_t *tfslen,
+                          const uint8_t *msg, size_t msglen, const uint8_t *sk)
+{
+    spx_ctx ctx;
+
+    const unsigned char *sk_prf = sk + PH_N;
+    const unsigned char *pk = sk + 2*PH_N;
+
+    unsigned char optrand[PH_N];
+    unsigned char msghash[PH_TFORS_MSG_BYTES];
+    unsigned char root[PH_TFORS_PK_BYTES];
+    unsigned char *msgtmp;
+    uint32_t i;
+    uint64_t tree;
+    uint32_t idx_leaf;
+    uint32_t counter = 0;
+    uint32_t tfors_auth_count;
+    size_t tfors_siglen;
+    size_t tfors_sig_max = PH_TFORS_SIG_MAX;
+    uint32_t indices[PH_TFORS_K];
+    uint32_t gwotsc_addr[8] = {0};
+    uint32_t tree_addr[8] = {0};
+
+    memcpy(ctx.sk_seed, sk, PH_N);
+    memcpy(ctx.pub_seed, pk, PH_N);
+
+    initialize_hash_function(&ctx);
+
+    set_addr_type(gwotsc_addr, PH_ADDR_TYPE_GWOTSC);
+    set_addr_type(tree_addr, PH_ADDR_TYPE_HASHTREE);
+
+    uint8_t *sig_origin = sig; /* mark the start of the signature for later use */
+    msgtmp = alloc_message_buffer(msg, msglen);
+    if (msgtmp == NULL) {
+        *siglen = 0;
+        *tfslen = 0;
+        return -1;
+    }
+
+    randombytes(optrand, PH_N);
+    gen_message_random(sig_origin, sk_prf, optrand, msg, msglen, &ctx);
+
+    counter = 0;
+    for (counter = 0; ; counter++) {
+        ull_to_bytes(msgtmp + msglen, COUNTER_SIZE, counter);
+        hash_message(msghash, &tree, &idx_leaf, sig_origin, pk,
+                        msgtmp, msglen + COUNTER_SIZE, &ctx);
+
+        message_to_indices(indices, msghash, &ctx);
+
+        octopus_compute_auth_count(indices, PH_TFORS_K, &tfors_auth_count);
+        tfors_siglen = PH_TFORS_K * PH_N + tfors_auth_count * PH_N;
+
+        if (tfors_siglen <= tfors_sig_max) {
+            break;
+        }
+        if (counter == UINT32_MAX) {
+            free(msgtmp);
+            *siglen = 0;
+            *tfslen = 0;
+            return -1;
+        }
+    }
+
+    save_tfors_counter(counter, sig_origin);
+    sig += PH_N + COUNTER_SIZE;
+    // size_t siglen_offset = PH_TFORS_SIG_MAX - tfors_siglen;
+    ull_to_bytes(sig, 2, tfors_siglen);
+    sig += 2;
+
+    set_tree_addr(gwotsc_addr, tree);
+    set_keypair_addr(gwotsc_addr, idx_leaf);
+
+    tfors_sign(sig, root, indices, &ctx, gwotsc_addr);
+    sig += tfors_siglen;
+
+    for (i = 0; i < PH_D; i++) {
+        set_layer_addr(tree_addr, i);
+        set_tree_addr(tree_addr, tree);
+
+        copy_tree_addr(gwotsc_addr, tree_addr);
+        set_keypair_addr(gwotsc_addr, idx_leaf);
+
+        uint32_t gwotsc_counter;
+        merkle_sign(sig, root, &ctx, gwotsc_addr, tree_addr, idx_leaf, &gwotsc_counter);
+        save_gwotsc_counter(gwotsc_counter, sig);
+        sig += (PH_GWOTSC_BYTES + PH_TREE_HEIGHT * PH_N + COUNTER_SIZE);
+
+        idx_leaf = (tree & ((1 << PH_TREE_HEIGHT)-1));
+        tree = tree >> PH_TREE_HEIGHT;
+    }
+
+    if (signature_length_from_tfors(tfors_siglen, siglen) != 0) {
+        free(msgtmp);
+        *siglen = 0;
+        *tfslen = 0;
+        return -1;
+    }
+    *tfslen = tfors_siglen;
+
+    free(msgtmp);
+
+    return 0;
+}
+
+/**
+ * Verifies a detached signature and message under a given public key.
+ */
+int crypto_sign_verify(const uint8_t *sig, size_t siglen,
+                       const uint8_t *msg, size_t msglen, const uint8_t *pk)
+{    
+    spx_ctx ctx;
+    const unsigned char *pub_root = pk + PH_N;
+    unsigned char msghash[PH_TFORS_MSG_BYTES];
+    unsigned char gwotsc_pk[PH_GWOTSC_BYTES];
+    unsigned char root[PH_TFORS_PK_BYTES];
+    unsigned char leaf[PH_N];
+    unsigned char *msgtmp;
+    unsigned int i;
+    int ret;
+    uint64_t tree;
+    uint32_t idx_leaf;
+    uint32_t counter;
+    uint32_t tfors_auth_count;
+    uint32_t indices[PH_TFORS_K];
+    uint32_t gwotsc_addr[8] = {0};
+    uint32_t tree_addr[8] = {0};
+    uint32_t gwotsc_pk_addr[8] = {0};
+    size_t tfors_siglen;
+    size_t expected_siglen;
+    size_t expected_tfors_siglen;
+
+    if (siglen < PH_N + COUNTER_SIZE + 2) {
+        return -1;
+    }
+
+    memcpy(ctx.pub_seed, pk, PH_N);
+
+    /* This hook allows the hash function instantiation to do whatever
+       preparation or computation it needs, based on the public seed. */
+    initialize_hash_function(&ctx);
+
+    set_addr_type(gwotsc_addr, PH_ADDR_TYPE_GWOTSC);
+    set_addr_type(tree_addr, PH_ADDR_TYPE_HASHTREE);
+    set_addr_type(gwotsc_pk_addr, PH_ADDR_TYPE_GWOTSCPK);
+
+    counter = get_tfors_counter(sig);
+    msgtmp = alloc_message_buffer(msg, msglen);
+    if (msgtmp == NULL) {
+        return -1;
+    }
+    ull_to_bytes(msgtmp + msglen, COUNTER_SIZE, counter);
+
+    /* Derive the message digest and leaf index from R || PK || M. */
+    /* The additional PH_N is a result of the hash domain separator. */
+    hash_message(msghash, &tree, &idx_leaf, sig, pk, msgtmp, msglen + COUNTER_SIZE, &ctx);
+    sig += (PH_N + COUNTER_SIZE);
+
+    /* Extract tfors signature length from signature */
+    tfors_siglen = (size_t)bytes_to_ull(sig, 2);
+    if (!tfors_siglen_is_valid(tfors_siglen) ||
+        signature_length_from_tfors(tfors_siglen, &expected_siglen) != 0 ||
+        siglen != expected_siglen) {
+        free(msgtmp);
+        return -1;
+    }
+    sig += 2;
+
+    message_to_indices(indices, msghash, &ctx);
+    octopus_compute_auth_count(indices, PH_TFORS_K, &tfors_auth_count);
+    expected_tfors_siglen = PH_TFORS_K * PH_N + (size_t)tfors_auth_count * PH_N;
+    if (tfors_siglen != expected_tfors_siglen) {
+        free(msgtmp);
+        return -1;
+    }
+
+    /* Layer correctly defaults to 0, so no need to set_layer_addr */
+    set_tree_addr(gwotsc_addr, tree);
+    set_keypair_addr(gwotsc_addr, idx_leaf);
+
+    tfors_pk_from_sig(root, sig, msghash, &ctx, gwotsc_addr);
+    
+    /* Skip TFORS signature body */
+    sig += tfors_siglen;
+
+    /* For each subtree.. */
+    for (i = 0; i < PH_D; i++) {
+        set_layer_addr(tree_addr, i);
+        set_tree_addr(tree_addr, tree);
+
+        copy_tree_addr(gwotsc_addr, tree_addr);
+        set_keypair_addr(gwotsc_addr, idx_leaf);
+
+        copy_keypair_addr(gwotsc_pk_addr, gwotsc_addr);
+
+        uint32_t gwotsc_counter = get_gwotsc_counter(sig);
+        /* The GWOTSC public key is only correct if the signature was correct. */
+        /* Initially, root is the TFORS pk, but on subsequent iterations it is
+           the root of the subtree below the currently processed subtree. */
+        gwotsc_pk_from_sig(gwotsc_pk, sig, root, &ctx, gwotsc_addr, gwotsc_counter);
+        sig += PH_GWOTSC_BYTES;
+
+        /* Compute the leaf node using the GWOTSC public key. */
+        thash(leaf, gwotsc_pk, PH_GWOTSC_LEN, &ctx, gwotsc_pk_addr);
+
+        /* Compute the root node of this subtree. */
+        compute_root(root, leaf, idx_leaf, 0, sig, PH_TREE_HEIGHT,
+                     &ctx, tree_addr);
+        sig += PH_TREE_HEIGHT * PH_N + COUNTER_SIZE;
+
+        /* Update the indices for the next layer. */
+        idx_leaf = (tree & ((1 << PH_TREE_HEIGHT)-1));
+        tree = tree >> PH_TREE_HEIGHT;
+    }
+
+    if (memcmp(root, pub_root, PH_N)) {
+        ret = -1;
+    } else {
+        ret = 0;
+    }
+
+    free(msgtmp);
+    return ret;
+}
+
+/**
+ * Returns an array containing the signature followed by the message.
+ */
+int crypto_sign(unsigned char *sm, unsigned long long *smlen, unsigned long long *slen,
+                unsigned long long *tfslen, const unsigned char *msg, unsigned long long msglen,
+                const unsigned char *sk)
+{
+    size_t siglen;
+    size_t tfors_siglen;
+
+    if (crypto_sign_signature(sm, &siglen, &tfors_siglen, msg, (size_t)msglen, sk) != 0) {
+        *smlen = 0;
+        *slen = 0;
+        *tfslen = 0;
+        return -1;
+    }
+
+    memmove(sm + siglen, msg, msglen);
+    *smlen = siglen + msglen;   
+    *slen = siglen;
+    *tfslen = tfors_siglen;
+
+    return 0;
+}
+
+/**
+ * Verifies a given signature-message pair under a given public key.
+ */
+int crypto_sign_open(unsigned char *msg, unsigned long long *msglen, unsigned long long *slen, 
+                        unsigned long long *tfslen, const unsigned char *sm, 
+                        unsigned long long smlen, const unsigned char *pk)
+{
+    unsigned long long slen_tmp = *slen;
+    unsigned long long msglen_tmp;
+
+    (void)tfslen;
+
+    if (slen_tmp > smlen) {
+        *msglen = 0;
+        return -1;
+    }
+
+    msglen_tmp = smlen - slen_tmp;
+
+    if (crypto_sign_verify(sm, (size_t)slen_tmp, sm + slen_tmp, (size_t)msglen_tmp, pk)) {
+        memset(msg, 0, (size_t)msglen_tmp);
+        *msglen = 0;
+        return -1;
+    }
+
+    *msglen = msglen_tmp;
+    memmove(msg, sm + slen_tmp, *msglen);
+
+    return 0;
+}
+
+#ifdef SUBMISSION_DRNG
 
 unsigned long long sig_get_pk_len_bytes(void)
 {
@@ -131,3 +545,5 @@ int sig_verify(
 	}
 	return SIG_CRYPTO_FAILED;
 }
+
+#endif /* SUBMISSION_DRNG */

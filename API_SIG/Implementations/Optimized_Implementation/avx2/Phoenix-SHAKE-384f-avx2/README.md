@@ -1,7 +1,7 @@
-# Phoenix-SHAKE-384f-avx2
+# Phoenix-SHAKE-128f-avx2
 
 This directory contains the AVX2-optimized implementation for the
-`Phoenix-SHAKE-384f` signature algorithm instance.
+`Phoenix-SHAKE-128f` signature algorithm instance.
 
 ## Build and generate KAT vectors
 
@@ -12,7 +12,7 @@ make kat
 The generated vector file is written to:
 
 ```text
-output/KAT_SIG_Phoenix-SHAKE-384f-avx2.txt
+output/KAT_SIG_Phoenix-SHAKE-128f-avx2.txt
 ```
 
 Expected SHA-256:

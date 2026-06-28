@@ -10,15 +10,15 @@
 #include "../thash.h"
 #include "../api.h"
 #include "../tfors.h"
-#include "../wotsx1.h"
+#include "../gwotscx1.h"
 #include "../params.h"
 #include "../randombytes.h"
 #include "cycles.h"
 
-#define SPX_MLEN 32
+#define PH_MLEN 32
 #define NTESTS 10
 
-static void wots_gen_pkx1(unsigned char *pk, const spx_ctx* ctx,
+static void gwotsc_gen_pkx1(unsigned char *pk, const spx_ctx* ctx,
                 uint32_t addr[8]);
 
 static int cmp_llu(const void *a, const void*b)
@@ -117,19 +117,19 @@ int main(void)
 
     spx_ctx ctx;
 
-    unsigned char pk[SPX_PK_BYTES];
-    unsigned char sk[SPX_SK_BYTES];
-    unsigned char *m = malloc(SPX_MLEN);
-    unsigned char *sm = malloc(SPX_BYTES + SPX_MLEN);
-    unsigned char *mout = malloc(SPX_BYTES + SPX_MLEN);
+    unsigned char pk[PH_PK_BYTES];
+    unsigned char sk[PH_SK_BYTES];
+    unsigned char *m = malloc(PH_MLEN);
+    unsigned char *sm = malloc(PH_BYTES + PH_MLEN);
+    unsigned char *mout = malloc(PH_BYTES + PH_MLEN);
 
-    unsigned char tfors_pk[SPX_TFORS_PK_BYTES];
-    unsigned char tfors_m[SPX_TFORS_MSG_BYTES];
-    unsigned char tfors_sig[SPX_TFORS_BYTES];
+    unsigned char tfors_pk[PH_TFORS_PK_BYTES];
+    unsigned char tfors_m[PH_TFORS_MSG_BYTES];
+    unsigned char tfors_sig[PH_TFORS_BYTES];
     uint32_t addr[8];
-    unsigned char block[SPX_N];
+    unsigned char block[PH_N];
 
-    unsigned char wots_pk[SPX_WOTS_PK_BYTES];
+    unsigned char gwotsc_pk[PH_GWOTSC_PK_BYTES];
 
     unsigned long long smlen;
     unsigned long long mlen;
@@ -140,36 +140,36 @@ int main(void)
     double result;
     int i;
 
-    randombytes(m, SPX_MLEN);
-    randombytes((unsigned char *)addr, SPX_ADDR_BYTES);
-    randombytes(tfors_m, SPX_TFORS_MSG_BYTES);
+    randombytes(m, PH_MLEN);
+    randombytes((unsigned char *)addr, PH_ADDR_BYTES);
+    randombytes(tfors_m, PH_TFORS_MSG_BYTES);
 
-    randombytes(ctx.pub_seed, SPX_N);
-    randombytes(ctx.sk_seed, SPX_N);
+    randombytes(ctx.pub_seed, PH_N);
+    randombytes(ctx.sk_seed, PH_N);
     initialize_hash_function(&ctx);
 
-    uint32_t tfors_indices[SPX_TFORS_K];
+    uint32_t tfors_indices[PH_TFORS_K];
     message_to_indices(tfors_indices, tfors_m, &ctx);
 
     printf("===============================================================\n");
     printf("Phoenix End-to-End Benchmark\n");
     printf("Parameter set: %s\n", PARAMNAME);
     printf("Parameters: n = %d, h = %d, d = %d, a = %d, k = %d, w = %d\n",
-           SPX_N, SPX_FULL_HEIGHT, SPX_D, SPX_TFORS_A, SPX_TFORS_K,
-           SPX_WOTS_W1);
+           PH_N, PH_FULL_HEIGHT, PH_D, PH_TFORS_A, PH_TFORS_K,
+           PH_GWOTSC_W1);
 
     printf("Running %d iterations.\n", NTESTS);
 
     MEASURT("thash                ", 1, thash(block, block, 1, &ctx, addr));
     MEASURE("Generating keypair.. ", 1, crypto_sign_keypair(pk, sk));
-    MEASURE("  - WOTS pk gen..    ", (1 << SPX_TREE_HEIGHT), wots_gen_pkx1(wots_pk, &ctx, addr));
-    MEASURE("Signing..            ", 1, crypto_sign(sm, &smlen, &slen, &tfslen, m, SPX_MLEN, sk));
-    MEASURE("  - WOTS pk gen..    ", SPX_D * (1 << SPX_TREE_HEIGHT), wots_gen_pkx1(wots_pk, &ctx, addr));
+    MEASURE("  - GWOTSC pk gen..    ", (1 << PH_TREE_HEIGHT), gwotsc_gen_pkx1(gwotsc_pk, &ctx, addr));
+    MEASURE("Signing..            ", 1, crypto_sign(sm, &smlen, &slen, &tfslen, m, PH_MLEN, sk));
+    MEASURE("  - GWOTSC pk gen..    ", PH_D * (1 << PH_TREE_HEIGHT), gwotsc_gen_pkx1(gwotsc_pk, &ctx, addr));
     MEASURE("Verifying..          ", 1, crypto_sign_open(mout, &mlen, &slen, &tfslen, sm, smlen, pk));
 
     printf("Signature size: %llu bytes\n", smlen);
-    printf("Public key size: %d bytes\n", SPX_PK_BYTES);
-    printf("Secret key size: %d bytes\n", SPX_SK_BYTES);
+    printf("Public key size: %d bytes\n", PH_PK_BYTES);
+    printf("Secret key size: %d bytes\n", PH_SK_BYTES);
 
     free(m);
     free(sm);
@@ -178,10 +178,10 @@ int main(void)
     return 0;
 }
 
-static void wots_gen_pkx1(unsigned char *pk, const spx_ctx *ctx,
+static void gwotsc_gen_pkx1(unsigned char *pk, const spx_ctx *ctx,
                   uint32_t addr[8]) {
     struct leaf_info_x1 leaf;
-    unsigned steps[ SPX_WOTS_LEN ] = { 0 };
+    unsigned steps[ PH_GWOTSC_LEN ] = { 0 };
     INITIALIZE_LEAF_INFO_X1(leaf, addr, steps);
-    wots_gen_leafx1(pk, ctx, 0, &leaf);
+    gwotsc_gen_leafx1(pk, ctx, 0, &leaf);
 }

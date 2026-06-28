@@ -4,29 +4,29 @@
 #include "counter.h"
 #include "utils.h"
 
-/* The GWOTSC counter is stored just after the WOTS signature and the tree authentication path*/
-#define WOTS_COUNTER_OFFSET (SPX_WOTS_BYTES + SPX_TREE_HEIGHT * SPX_N)
-/* FORS+C  counter is stored just after the randomization value */
-/* Maybe we dont need counter for FORS+C here */
-#define FORS_COUNTER_OFFSET (SPX_N)
+/* The GWOTSC counter is stored just after the GWOTSC signature and the tree authentication path*/
+#define GWOTSC_COUNTER_OFFSET (PH_GWOTSC_BYTES + PH_TREE_HEIGHT * PH_N)
+/* TFORS  counter is stored just after the randomization value */
+/* Maybe we dont need counter for TFORS here */
+#define TFORS_COUNTER_OFFSET (PH_N)
 
-void save_wots_counter(uint32_t counter, unsigned char *sig)
+void save_gwotsc_counter(uint32_t counter, unsigned char *sig)
 {
-    ull_to_bytes(sig + WOTS_COUNTER_OFFSET, COUNTER_SIZE, counter);
+    ull_to_bytes(sig + GWOTSC_COUNTER_OFFSET, COUNTER_SIZE, counter);
 }
 
-/* The counter is stored just after the WOTS signature*/
-uint32_t get_wots_counter(const unsigned char *sig)
+/* The counter is stored just after the GWOTSC signature*/
+uint32_t get_gwotsc_counter(const unsigned char *sig)
 {
-    return (uint32_t)bytes_to_ull(sig + WOTS_COUNTER_OFFSET, COUNTER_SIZE);
+    return (uint32_t)bytes_to_ull(sig + GWOTSC_COUNTER_OFFSET, COUNTER_SIZE);
 }
-/* FORS+C  counter is stored in the end */
-void save_fors_counter(uint32_t counter, unsigned char *sig)
+/* TFORS  counter is stored in the end */
+void save_tfors_counter(uint32_t counter, unsigned char *sig)
 {
-    ull_to_bytes(sig + FORS_COUNTER_OFFSET, COUNTER_SIZE, counter);
+    ull_to_bytes(sig + TFORS_COUNTER_OFFSET, COUNTER_SIZE, counter);
 }
 
-uint32_t get_fors_counter(const unsigned char *sig)
+uint32_t get_tfors_counter(const unsigned char *sig)
 {
-    return (uint32_t)bytes_to_ull(sig + FORS_COUNTER_OFFSET, COUNTER_SIZE);
+    return (uint32_t)bytes_to_ull(sig + TFORS_COUNTER_OFFSET, COUNTER_SIZE);
 }

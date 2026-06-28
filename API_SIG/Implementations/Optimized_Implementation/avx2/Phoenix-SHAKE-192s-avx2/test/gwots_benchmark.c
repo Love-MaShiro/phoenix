@@ -8,8 +8,8 @@
 #include "../hash.h"
 #include "../merkle.h"
 #include "../thash.h"
-#include "../wots.h"
-#include "../wotsx1.h"
+#include "../gwotsc.h"
+#include "../gwotscx1.h"
 #include "../params.h"
 #include "../randombytes.h"
 #include "../address.h"
@@ -18,7 +18,7 @@
 
 #define NTESTS 10
 
-static void wots_gen_pkx1(unsigned char *pk, const spx_ctx *ctx,
+static void gwotsc_gen_pkx1(unsigned char *pk, const spx_ctx *ctx,
                           uint32_t addr[8]);
 
 static int cmp_llu(const void *a, const void *b)
@@ -112,12 +112,12 @@ int main(void)
     randombytes(ctx.sk_seed, SPX_N);
     initialize_hash_function(&ctx);
 
-    uint32_t wots_addr[8] = {0};
+    uint32_t gwotsc_addr[8] = {0};
     uint32_t tree_addr[8] = {0};
     uint32_t idx_leaf = 3;
 
-    set_type(wots_addr, SPX_ADDR_TYPE_WOTS);
-    set_keypair_addr(wots_addr, idx_leaf);
+    set_type(gwotsc_addr, SPX_ADDR_TYPE_WOTS);
+    set_keypair_addr(gwotsc_addr, idx_leaf);
     set_type(tree_addr, SPX_ADDR_TYPE_HASHTREE);
 
     unsigned char message[SPX_N];
@@ -126,7 +126,7 @@ int main(void)
     unsigned char recovered_pk[SPX_WOTS_PK_BYTES];
     unsigned char recovered_leaf[SPX_N];
     unsigned char computed_root[SPX_N];
-    unsigned char wots_pk[SPX_WOTS_PK_BYTES];
+    unsigned char gwotsc_pk[SPX_WOTS_PK_BYTES];
     uint32_t counter;
 
     unsigned long long t[NTESTS + 1];
@@ -149,23 +149,23 @@ int main(void)
     printf("\nRunning %d iterations.\n\n", NTESTS);
 
     MEASURE("WOTS pk gen..           ", 1,
-            wots_gen_pkx1(wots_pk, &ctx, (uint32_t *)wots_addr),
+            gwotsc_gen_pkx1(gwotsc_pk, &ctx, (uint32_t *)gwotsc_addr),
             "WOTS PK Gen");
 
     MEASURE("merkle_sign..           ", 1, {
         memcpy(root, message, SPX_N);
-        set_type(wots_addr, SPX_ADDR_TYPE_WOTS);
-        set_keypair_addr(wots_addr, idx_leaf);
+        set_type(gwotsc_addr, SPX_ADDR_TYPE_WOTS);
+        set_keypair_addr(gwotsc_addr, idx_leaf);
         set_type(tree_addr, SPX_ADDR_TYPE_HASHTREE);
-        merkle_sign(sig, root, &ctx, wots_addr, tree_addr, idx_leaf, &counter);
+        merkle_sign(sig, root, &ctx, gwotsc_addr, tree_addr, idx_leaf, &counter);
     }, "Merkle Sign (with counter search)");
 
     printf("  Last counter found: %u\n\n", counter);
 
-    MEASURE("wots_pk_from_sig..      ", 1, {
-        set_type(wots_addr, SPX_ADDR_TYPE_WOTS);
-        set_keypair_addr(wots_addr, idx_leaf);
-        wots_pk_from_sig(recovered_pk, sig, message, &ctx, wots_addr, counter);
+    MEASURE("gwotsc_pk_from_sig..      ", 1, {
+        set_type(gwotsc_addr, SPX_ADDR_TYPE_WOTS);
+        set_keypair_addr(gwotsc_addr, idx_leaf);
+        gwotsc_pk_from_sig(recovered_pk, sig, message, &ctx, gwotsc_addr, counter);
     }, "WOTS PK from Sig");
 
     MEASURE("Full verify path..      ", 1, {
@@ -174,7 +174,7 @@ int main(void)
         uint32_t pka[8] = {0};
         set_type(wa, SPX_ADDR_TYPE_WOTS);
         set_keypair_addr(wa, idx_leaf);
-        wots_pk_from_sig(recovered_pk, sig, message, &ctx, wa, counter);
+        gwotsc_pk_from_sig(recovered_pk, sig, message, &ctx, wa, counter);
         copy_keypair_addr(pka, wa);
         set_type(pka, SPX_ADDR_TYPE_WOTSPK);
         thash(recovered_leaf, recovered_pk, SPX_WOTS_LEN, &ctx, pka);
@@ -193,11 +193,11 @@ int main(void)
     return 0;
 }
 
-static void wots_gen_pkx1(unsigned char *pk, const spx_ctx *ctx,
+static void gwotsc_gen_pkx1(unsigned char *pk, const spx_ctx *ctx,
                           uint32_t addr[8])
 {
     struct leaf_info_x1 leaf;
     unsigned steps[SPX_WOTS_LEN] = {0};
     INITIALIZE_LEAF_INFO_X1(leaf, addr, steps);
-    wots_gen_leafx1(pk, ctx, 0, &leaf);
+    gwotsc_gen_leafx1(pk, ctx, 0, &leaf);
 }

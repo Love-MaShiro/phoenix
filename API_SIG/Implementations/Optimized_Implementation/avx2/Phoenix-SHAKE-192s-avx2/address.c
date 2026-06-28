@@ -5,104 +5,127 @@
 #include "params.h"
 #include "utils.h"
 
-/*
- * Specify which level of Merkle tree (the "layer") we're working on
+/**
+ * Sets the Merkle tree layer index.
+ * @param layer_addr Address structure to modify
+ * @param layer The layer index (0 to PH_D-1)
  */
-void set_layer_addr(uint32_t addr[8], uint32_t layer)
+void set_layer_addr(uint32_t layer_addr[8], uint32_t layer)
 {
-    ((unsigned char *)addr)[SPX_OFFSET_LAYER] = (unsigned char)layer;
+    ((unsigned char *)layer_addr)[PH_OFFSET_LAYER] = (unsigned char)layer;
 }
 
-/*
- * Specify which Merkle tree within the level (the "tree address") we're working on
+/**
+ * Sets the subtree identifier within the current layer.
+ * @param tree_addr Address structure to modify
+ * @param tree The subtree tree address
  */
-void set_tree_addr(uint32_t addr[8], uint64_t tree)
+void set_tree_addr(uint32_t tree_addr[8], uint64_t tree)
 {
-#if (SPX_TREE_HEIGHT * (SPX_D - 1)) > 64
-    #error Subtree addressing is currently limited to at most 2^64 trees
+#if (PH_TREE_HEIGHT * (PH_D - 1)) > 64
+    #error Tree address is not supported for PH_D > 64
 #endif
-    ull_to_bytes(&((unsigned char *)addr)[SPX_OFFSET_TREE], 8, tree );
+    ull_to_bytes(&((unsigned char *)tree_addr)[PH_OFFSET_TREE], 8, tree);
 }
 
-/*
- * Specify the reason we'll use this address structure for, that is, what
- * hash will we compute with it.  This is used so that unrelated types of
- * hashes don't accidentally get the same address structure.  The type will be
- * one of the SPX_ADDR_TYPE constants
+/**
+ * Sets the address type for hash operations.
+ * Different hash computations use different address types to prevent collisions.
+ * @param tree_addr Address structure to modify
+ * @param addr_type One of the PH_ADDR_TYPE_* constants
  */
-void set_type(uint32_t addr[8], uint32_t type)
+void set_addr_type(uint32_t tree_addr[8], uint32_t addr_type)
 {
-    ((unsigned char *)addr)[SPX_OFFSET_TYPE] = (unsigned char)type;
+    ((unsigned char *)tree_addr)[PH_OFFSET_ADDR_TYPE] = (unsigned char)addr_type;
 }
 
-/*
- * Copy the layer and tree fields of the address structure.  This is used
- * when we're doing multiple types of hashes within the same Merkle tree
+/**
+ * Copies the layer and tree fields between address structures.
+ * Used when multiple hash operations share the same tree context.
+ * @param dest Destination address structure
+ * @param src Source address structure
  */
-void copy_subtree_addr(uint32_t out[8], const uint32_t in[8])
+void copy_tree_addr(uint32_t dest[8], const uint32_t src[8])
 {
-    memcpy( out, in, SPX_OFFSET_TREE+8 );
+    memcpy(dest, src, PH_OFFSET_TREE + 8);
 }
 
-/* These functions are used for OTS addresses. */
+/* =========================================================================
+ * WOTS (Winternitz One-Time Signature) Address Operations
+ * These functions manage addresses for WOTS key pairs and chain operations
+ * ========================================================================= */
 
-/*
- * Specify which Merkle leaf we're working on; that is, which OTS keypair
- * we're talking about.
+/**
+ * Sets the WOTS key pair index within the leaf nodes.
+ * Each leaf corresponds to a unique WOTS key pair.
+ * @param keypair_addr Address structure to modify
+ * @param keypair The key pair index
  */
-void set_keypair_addr(uint32_t addr[8], uint32_t keypair)
+void set_keypair_addr(uint32_t keypair_addr[8], uint32_t keypair)
 {
-    u32_to_bytes(&((unsigned char *)addr)[SPX_OFFSET_KP_ADDR], keypair);
+    u32_to_bytes(&((unsigned char *)keypair_addr)[PH_OFFSET_KEYPAIR_ADDR], keypair);
 }
 
-/*
- * Copy the layer, tree and keypair fields of the address structure.  This is
- * used when we're doing multiple things within the same OTS keypair
+/**
+ * Copies layer, tree, and keypair fields between address structures.
+ * Enables parallel operations on the same WOTS key pair.
+ * @param dest Destination address structure
+ * @param src Source address structure
  */
-void copy_keypair_addr(uint32_t out[8], const uint32_t in[8])
+void copy_keypair_addr(uint32_t dest[8], const uint32_t src[8])
 {
-    memcpy( out, in, SPX_OFFSET_TREE+8 );
-    memcpy( (unsigned char *)out + SPX_OFFSET_KP_ADDR, (unsigned char *)in + SPX_OFFSET_KP_ADDR, 4); 
+    memcpy(dest, src, PH_OFFSET_TREE + 8);
+    memcpy((unsigned char *)dest + PH_OFFSET_KEYPAIR_ADDR,
+           (unsigned char *)src + PH_OFFSET_KEYPAIR_ADDR, 4);
 }
 
+/* =========================================================================
+ * Winternitz Chain Address Operations
+ * ========================================================================= */
 
-/*
- * Specify which Merkle chain within the OTS we're working with
- * (the chain address)
+/**
+ * Sets the chain index within the WOTS signature.
+ * Different chains use different Winternitz parameters (W1 or W2).
+ * @param chain_addr Address structure to modify
+ * @param gwotsc_chain The chain index
  */
-void set_chain_addr(uint32_t addr[8], uint32_t chain)
+void set_chain_addr(uint32_t chain_addr[8], uint32_t gwotsc_chain)
 {
-    ((unsigned char *)addr)[SPX_OFFSET_CHAIN_ADDR] = (unsigned char)chain;
+    ((unsigned char *)chain_addr)[PH_OFFSET_CHAIN_ADDR] = (unsigned char)gwotsc_chain;
 }
 
-/*
- * Specify where in the Merkle chain we are
-* (the hash address)
+/**
+ * Sets the position within a Winternitz chain.
+ * Indicates how many hash iterations have been performed.
+ * @param hash_addr Address structure to modify
+ * @param hash The hash iteration index
  */
-void set_hash_addr(uint32_t addr[8], uint32_t hash)
+void set_hash_addr(uint32_t hash_addr[8], uint32_t hash)
 {
-    ((unsigned char *)addr)[SPX_OFFSET_HASH_ADDR] = (unsigned char)hash;
+    ((unsigned char *)hash_addr)[PH_OFFSET_HASH_ADDR] = (unsigned char)hash;
 }
 
-/* These functions are used for all hash tree addresses (including TFORS). */
+/* =========================================================================
+ * Tree Traversal Address Operations
+ * Used for both TFORS authentication paths and Merkle tree computations
+ * ========================================================================= */
 
-/*
- * Specify the height of the node in the Merkle/TFORS tree we are in
- * (the tree height)
+/**
+ * Sets the current height within the TFORS or Merkle tree.
+ * @param tfors_addr Address structure to modify
+ * @param tfors_tree_height Height level in the tree
  */
-void set_tree_height(uint32_t addr[8], uint32_t tree_height)
+void set_tree_height(uint32_t tfors_addr[8], uint32_t tfors_tree_height)
 {
-    ((unsigned char *)addr)[SPX_OFFSET_TREE_HGT] = (unsigned char)tree_height;
+    ((unsigned char *)tfors_addr)[PH_OFFSET_TREE_HEIGHT] = (unsigned char)tfors_tree_height;
 }
 
-/*
- * Specify the distance from the left edge of the node in the Merkle/TFORS tree
- * (the tree index)
+/**
+ * Sets the horizontal position (index) within the current tree level.
+ * @param tfors_addr Address structure to modify
+ * @param tfors_tree_index Node index at the current height
  */
-void set_tree_index(uint32_t addr[8], uint32_t tree_index)
+void set_tree_index(uint32_t tfors_addr[8], uint32_t tfors_tree_index)
 {
-    u32_to_bytes(&((unsigned char *)addr)[SPX_OFFSET_TREE_INDEX], tree_index );
+    u32_to_bytes(&((unsigned char *)tfors_addr)[PH_OFFSET_TREE_INDEX], tfors_tree_index);
 }
-
-
-

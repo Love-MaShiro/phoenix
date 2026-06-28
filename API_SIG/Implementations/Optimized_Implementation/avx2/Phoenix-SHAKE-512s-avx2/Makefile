@@ -15,14 +15,13 @@ CORE_SOURCES = \
 	merkle.c \
 	octopus.c \
 	randombytes.c \
-	sign.c \
+	SIG_AlgorithmInstance.c \
 	tfors.c \
 	thash_shake_simple.c thash_shake_simplex4.c \
 	utils.c utilsx1.c utilsx4.c \
-	wots.c wotsx1.c wotsx4.c
+	gwotsc.c gwotscx1.c gwotscx4.c
 
 SUBMISSION_SOURCES = \
-	SIG_AlgorithmInstance.c \
 	drng.c \
 	KAT_SIG.c
 
@@ -31,15 +30,29 @@ HEADERS = \
 	hash.h hashx4.h \
 	merkle.h octopus.h randombytes.h shake_offsets.h \
 	tfors.h thash.h thashx4.h \
-	utils.h utilsx1.h utilsx4.h wots.h wotsx1.h wotsx4.h \
+	utils.h utilsx1.h utilsx4.h gwotsc.h gwotscx1.h gwotscx4.h \
 	api.h params.h context.h drng.h \
 	keccak4x/KeccakP-1600-times4-SnP.h \
 	keccak4x/KeccakP-1600-unrolling.macros \
 	keccak4x/SIMD256-config.h keccak4x/align.h keccak4x/brg_endian.h
 
-.PHONY: all clean kat benchmark
+TESTS = test/spx \
+		test/tfors \
+		test/octopus
+
+BENCHMARK = test/benchmark
+
+.PHONY: all clean kat test tests benchmark benchmarks
 
 all: KAT_SIG
+
+tests: $(TESTS)
+
+test: $(TESTS:=.exec)
+
+benchmarks: $(BENCHMARK)
+
+benchmark: $(BENCHMARK:=.exec)
 
 kat: KAT_SIG
 	./KAT_SIG
@@ -47,10 +60,17 @@ kat: KAT_SIG
 KAT_SIG: $(CORE_SOURCES) $(SUBMISSION_SOURCES) $(HEADERS)
 	$(CC) $(CFLAGS) -DPARAMNAME=\"$(ALGORITHM_INSTANCE)\" -o $@ $(CORE_SOURCES) $(SUBMISSION_SOURCES)
 
-benchmark: $(CORE_SOURCES) test/benchmark.c test/cycles.c
+$(BENCHMARK): $(CORE_SOURCES) test/benchmark.c test/cycles.c
 	$(CC) $(CFLAGS) -U SUBMISSION_DRNG -DPARAMNAME=\"$(ALGORITHM_INSTANCE)\" -o $@ $(CORE_SOURCES) test/benchmark.c test/cycles.c
+
+test/%: test/%.c $(CORE_SOURCES) $(HEADERS)
+	$(CC) $(CFLAGS) -U SUBMISSION_DRNG -DPARAMNAME=\"$(ALGORITHM_INSTANCE)\" -o $@ $(CORE_SOURCES) $<
+
+test/%.exec: test/%
+	@$<
 
 clean:
 	$(RM) KAT_SIG
-	$(RM) benchmark
+	$(RM) $(BENCHMARK)
+	$(RM) $(TESTS)
 	$(RM) -r output
