@@ -21,6 +21,12 @@ PQCsignKAT_*.rsp
 PQCsignKAT_*.req
 *.exe
 
+# Generated benchmark/test outputs
+benchmark
+KAT_SIG
+test-sm3-xofx4
+output/
+
 # Common compiler byproducts
 *.o
 *.o.d

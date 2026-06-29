@@ -1,5 +1,5 @@
-#ifndef SPX_UTILSX4_H
-#define SPX_UTILSX4_H
+#ifndef SPX_UTILSX1_H
+#define SPX_UTILSX1_H
 
 #include <stdint.h>
 #include "params.h"

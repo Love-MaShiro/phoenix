@@ -1,4 +1,4 @@
-﻿ALGORITHM_INSTANCE = Phoenix-SM3-192f-avx2
+ALGORITHM_INSTANCE = Phoenix-SM3-192f-avx2
 PARAMS = phoenix-sm3-192f
 
 CC ?= gcc
@@ -15,9 +15,10 @@ CORE_SOURCES = \
 	randombytes.c \
 	sign.c \
 	tfors.c \
-	thash_sm3_simple.c thash_sm3_simplex8.c \
+	thash_sm3_simple.c thash_sm3_simplex8.c thash_sm3_simplex4.c \
 	utils.c \
 	utilsx1.c \
+	utilsx4.c \
 	utilsx8.c \
 	wots.c \
 	wotsx1.c
