@@ -17,8 +17,8 @@ CORE_SOURCES = \
 	thash_shake_simple.c \
 	utils.c \
 	utilsx1.c \
-	wots.c \
-	wotsx1.c
+	gwots.c \
+	gwotsx1.c
 
 SUBMISSION_SOURCES = \
 	SIG_AlgorithmInstance.c \

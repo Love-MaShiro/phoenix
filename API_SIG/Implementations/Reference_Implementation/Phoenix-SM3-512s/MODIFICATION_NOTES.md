@@ -320,8 +320,8 @@ static unsigned char *alloc_message_buffer(const unsigned char *m, size_t mlen)
 ```c
 static int signature_length_from_tfors(size_t tfors_siglen, size_t *siglen)
 {
-    const size_t wots_layer_len = SPX_WOTS_BYTES + SPX_TREE_HEIGHT * SPX_N + COUNTER_SIZE;
-    const size_t fixed_siglen = SPX_N + COUNTER_SIZE + 2 + (size_t)SPX_D * wots_layer_len;
+    const size_t gwots_layer_len = SPX_WOTS_BYTES + SPX_TREE_HEIGHT * SPX_N + COUNTER_SIZE;
+    const size_t fixed_siglen = SPX_N + COUNTER_SIZE + 2 + (size_t)SPX_D * gwots_layer_len;
 
     if (tfors_siglen > SIZE_MAX - fixed_siglen) {
         return -1;

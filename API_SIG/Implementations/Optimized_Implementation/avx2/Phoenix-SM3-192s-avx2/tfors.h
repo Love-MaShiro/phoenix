@@ -10,6 +10,17 @@ void tfors_sk_to_leaf(unsigned char *leaf, const unsigned char *sk,
                             const spx_ctx *ctx,
                             uint32_t tfors_leaf_addr[8]);
 
+void tfors_sk_to_leafx4(unsigned char *leaf0,
+                        unsigned char *leaf1,
+                        unsigned char *leaf2,
+                        unsigned char *leaf3,
+                        const unsigned char *sk0,
+                        const unsigned char *sk1,
+                        const unsigned char *sk2,
+                        const unsigned char *sk3,
+                        const spx_ctx *ctx,
+                        uint32_t tfors_leaf_addrx4[4*8]);
+
 void message_to_indices(uint32_t *indices, const unsigned char *m, const spx_ctx *ctx);
 
 /**
@@ -36,6 +47,3 @@ void tfors_pk_from_sig(unsigned char *pk,
                       const uint32_t tfors_addr[8]);
 
 #endif
-
-
-

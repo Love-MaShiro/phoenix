@@ -35,8 +35,8 @@ algorithm. The file structure is as follows:
 |------|-------------|
 | `api.h` | Cryptographic API interface declarations |
 | `sign.c` | Core signing and verification logic |
-| `wots.c` | WOTS+ signature scheme implementation |
-| `wotsx1.c` | WOTS+ single-path implementation |
+| `gwots.c` | GWOTS+ signature scheme implementation |
+| `gwotsx1.c` | GWOTS+ single-path implementation |
 | `tfors.c` | TFORS signature scheme implementation |
 | `merkle.c` | Merkle tree implementation |
 | `octopus.c` | Octopus hash function implementation |
@@ -82,8 +82,8 @@ algorithm. The file structure is as follows:
 | `utils.h` | Utility functions interface |
 | `utilsx1.h` | Single-path utility functions interface |
 | `utilsx8.h` | 8-way parallel utility functions interface |
-| `wots.h` | WOTS+ interface |
-| `wotsx1.h` | WOTS+ single-path interface |
+| `gwots.h` | GWOTS+ interface |
+| `gwotsx1.h` | GWOTS+ single-path interface |
 
 ### External Dependencies
 

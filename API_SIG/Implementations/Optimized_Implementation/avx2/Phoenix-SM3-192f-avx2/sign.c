@@ -7,7 +7,7 @@
 #include "counter.h"
 #include "api.h"
 #include "params.h"
-#include "wots.h"
+#include "gwots.h"
 #include "tfors.h"
 #include "octopus.h"
 #include "hash.h"
@@ -36,8 +36,8 @@ static unsigned char *alloc_message_buffer(const unsigned char *m, size_t mlen)
 
 static int signature_length_from_tfors(size_t tfors_siglen, size_t *siglen)
 {
-    const size_t wots_layer_len = SPX_WOTS_BYTES + SPX_TREE_HEIGHT * SPX_N + COUNTER_SIZE;
-    const size_t fixed_siglen = SPX_N + COUNTER_SIZE + 2 + (size_t)SPX_D * wots_layer_len;
+    const size_t gwots_layer_len = SPX_GWOTS_BYTES + SPX_TREE_HEIGHT * SPX_N + COUNTER_SIZE;
+    const size_t fixed_siglen = SPX_N + COUNTER_SIZE + 2 + (size_t)SPX_D * gwots_layer_len;
 
     if (tfors_siglen > SIZE_MAX - fixed_siglen) {
         return -1;
@@ -153,7 +153,7 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen, size_t *tfslen,
     size_t tfors_siglen;
     size_t tfors_sig_max = SPX_TFORS_SIG_MAX;
     uint32_t indices[SPX_TFORS_K];
-    uint32_t wots_addr[8] = {0};
+    uint32_t gwots_addr[8] = {0};
     uint32_t tree_addr[8] = {0};
 
     memcpy(ctx.sk_seed, sk, SPX_N);
@@ -161,7 +161,7 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen, size_t *tfslen,
 
     initialize_hash_function(&ctx);
 
-    set_type(wots_addr, SPX_ADDR_TYPE_WOTS);
+    set_type(gwots_addr, SPX_ADDR_TYPE_GWOTS);
     set_type(tree_addr, SPX_ADDR_TYPE_HASHTREE);
 
     uint8_t *sig_origin = sig; /* mark the start of the signature for later use */
@@ -203,23 +203,23 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen, size_t *tfslen,
     ull_to_bytes(sig, 2, tfors_siglen);
     sig += 2;
 
-    set_tree_addr(wots_addr, tree);
-    set_keypair_addr(wots_addr, idx_leaf);
+    set_tree_addr(gwots_addr, tree);
+    set_keypair_addr(gwots_addr, idx_leaf);
 
-    tfors_sign(sig, root, indices, &ctx, wots_addr);
+    tfors_sign(sig, root, indices, &ctx, gwots_addr);
     sig += tfors_siglen;
 
     for (i = 0; i < SPX_D; i++) {
         set_layer_addr(tree_addr, i);
         set_tree_addr(tree_addr, tree);
 
-        copy_subtree_addr(wots_addr, tree_addr);
-        set_keypair_addr(wots_addr, idx_leaf);
+        copy_subtree_addr(gwots_addr, tree_addr);
+        set_keypair_addr(gwots_addr, idx_leaf);
 
-        uint32_t wots_counter;
-        merkle_sign(sig, root, &ctx, wots_addr, tree_addr, idx_leaf, &wots_counter);
-        save_wots_counter(wots_counter, sig);
-        sig += (SPX_WOTS_BYTES + SPX_TREE_HEIGHT * SPX_N + COUNTER_SIZE);
+        uint32_t gwots_counter;
+        merkle_sign(sig, root, &ctx, gwots_addr, tree_addr, idx_leaf, &gwots_counter);
+        save_gwots_counter(gwots_counter, sig);
+        sig += (SPX_GWOTS_BYTES + SPX_TREE_HEIGHT * SPX_N + COUNTER_SIZE);
 
         idx_leaf = (tree & ((1 << SPX_TREE_HEIGHT)-1));
         tree = tree >> SPX_TREE_HEIGHT;
@@ -247,7 +247,7 @@ int crypto_sign_verify(const uint8_t *sig, size_t siglen,
     spx_ctx ctx;
     const unsigned char *pub_root = pk + SPX_N;
     unsigned char mhash[SPX_TFORS_MSG_BYTES];
-    unsigned char wots_pk[SPX_WOTS_BYTES];
+    unsigned char gwots_pk[SPX_GWOTS_BYTES];
     unsigned char root[SPX_TFORS_PK_BYTES];
     unsigned char leaf[SPX_N];
     unsigned char *mtmp;
@@ -258,9 +258,9 @@ int crypto_sign_verify(const uint8_t *sig, size_t siglen,
     uint32_t counter;
     uint32_t tfors_auth_count;
     uint32_t indices[SPX_TFORS_K];
-    uint32_t wots_addr[8] = {0};
+    uint32_t gwots_addr[8] = {0};
     uint32_t tree_addr[8] = {0};
-    uint32_t wots_pk_addr[8] = {0};
+    uint32_t gwots_pk_addr[8] = {0};
     size_t tfors_siglen;
     size_t expected_siglen;
     size_t expected_tfors_siglen;
@@ -275,9 +275,9 @@ int crypto_sign_verify(const uint8_t *sig, size_t siglen,
        preparation or computation it needs, based on the public seed. */
     initialize_hash_function(&ctx);
 
-    set_type(wots_addr, SPX_ADDR_TYPE_WOTS);
+    set_type(gwots_addr, SPX_ADDR_TYPE_GWOTS);
     set_type(tree_addr, SPX_ADDR_TYPE_HASHTREE);
-    set_type(wots_pk_addr, SPX_ADDR_TYPE_WOTSPK);
+    set_type(gwots_pk_addr, SPX_ADDR_TYPE_GWOTSPK);
 
     counter = get_fors_counter(sig);
     mtmp = alloc_message_buffer(m, mlen);
@@ -310,10 +310,10 @@ int crypto_sign_verify(const uint8_t *sig, size_t siglen,
     }
 
     /* Layer correctly defaults to 0, so no need to set_layer_addr */
-    set_tree_addr(wots_addr, tree);
-    set_keypair_addr(wots_addr, idx_leaf);
+    set_tree_addr(gwots_addr, tree);
+    set_keypair_addr(gwots_addr, idx_leaf);
 
-    tfors_pk_from_sig(root, sig, mhash, &ctx, wots_addr);
+    tfors_pk_from_sig(root, sig, mhash, &ctx, gwots_addr);
     
     /* Skip TFORS signature body */
     sig += tfors_siglen;
@@ -323,20 +323,20 @@ int crypto_sign_verify(const uint8_t *sig, size_t siglen,
         set_layer_addr(tree_addr, i);
         set_tree_addr(tree_addr, tree);
 
-        copy_subtree_addr(wots_addr, tree_addr);
-        set_keypair_addr(wots_addr, idx_leaf);
+        copy_subtree_addr(gwots_addr, tree_addr);
+        set_keypair_addr(gwots_addr, idx_leaf);
 
-        copy_keypair_addr(wots_pk_addr, wots_addr);
+        copy_keypair_addr(gwots_pk_addr, gwots_addr);
 
-        uint32_t wots_counter = get_wots_counter(sig);
-        /* The WOTS public key is only correct if the signature was correct. */
+        uint32_t gwots_counter = get_gwots_counter(sig);
+        /* The GWOTS public key is only correct if the signature was correct. */
         /* Initially, root is the TFORS pk, but on subsequent iterations it is
            the root of the subtree below the currently processed subtree. */
-        wots_pk_from_sig(wots_pk, sig, root, &ctx, wots_addr, wots_counter);
-        sig += SPX_WOTS_BYTES;
+        gwots_pk_from_sig(gwots_pk, sig, root, &ctx, gwots_addr, gwots_counter);
+        sig += SPX_GWOTS_BYTES;
 
-        /* Compute the leaf node using the WOTS public key. */
-        thash(leaf, wots_pk, SPX_WOTS_LEN, &ctx, wots_pk_addr);
+        /* Compute the leaf node using the GWOTS public key. */
+        thash(leaf, gwots_pk, SPX_GWOTS_LEN, &ctx, gwots_pk_addr);
 
         /* Compute the root node of this subtree. */
         compute_root(root, leaf, idx_leaf, 0, sig, SPX_TREE_HEIGHT,

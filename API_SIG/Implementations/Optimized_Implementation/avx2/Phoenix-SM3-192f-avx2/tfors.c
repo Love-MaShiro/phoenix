@@ -8,6 +8,8 @@
 // #include "utilsx1.h"
 #include "hash.h"
 #include "thash.h"
+#include "thashx4.h"
+#include "hashx4.h"
 #include "address.h"
 #include "octopus.h"
 
@@ -22,6 +24,22 @@ void tfors_sk_to_leaf(unsigned char *leaf, const unsigned char *sk,
                             uint32_t tfors_leaf_addr[8])
 {
     thash(leaf, sk, 1, ctx, tfors_leaf_addr);
+}
+
+void tfors_sk_to_leafx4(unsigned char *leaf0,
+                        unsigned char *leaf1,
+                        unsigned char *leaf2,
+                        unsigned char *leaf3,
+                        const unsigned char *sk0,
+                        const unsigned char *sk1,
+                        const unsigned char *sk2,
+                        const unsigned char *sk3,
+                        const spx_ctx *ctx,
+                        uint32_t tfors_leaf_addrx4[4*8])
+{
+    thashx4(leaf0, leaf1, leaf2, leaf3,
+            sk0, sk1, sk2, sk3,
+            1, ctx, tfors_leaf_addrx4);
 }
 
 struct tfors_gen_leaf_info {
@@ -104,7 +122,7 @@ void tfors_sign(unsigned char *sig, unsigned char *pk,
     }
     
     // generate auth paths
-    octopus_compute_auth_paths(pk, sig, indices, ctx, tfors_tree_addr);
+    octopus_compute_auth_pathsx4(pk, sig, indices, ctx, tfors_tree_addr);
 }
 
 void tfors_pk_from_sig(unsigned char *pk,

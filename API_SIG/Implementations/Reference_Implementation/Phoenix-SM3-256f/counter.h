@@ -8,9 +8,9 @@
 #include "utils.h"
 
 
-void save_wots_counter(uint32_t counter, unsigned char *sig);
+void save_gwots_counter(uint32_t counter, unsigned char *sig);
 
-uint32_t get_wots_counter(const unsigned char *sig);
+uint32_t get_gwots_counter(const unsigned char *sig);
 
 void save_fors_counter(uint32_t counter_bytes, unsigned char *sig);
 

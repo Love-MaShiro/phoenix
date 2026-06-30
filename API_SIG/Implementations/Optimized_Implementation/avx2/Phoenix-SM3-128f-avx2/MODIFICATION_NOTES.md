@@ -133,14 +133,14 @@ ref/params/params-phoenix-sm3-512s.h
 修改前：
 
 ```c
-#define SPX_BYTES (SPX_N + COUNTER_SIZE + SPX_TFORS_SIG_MAX + SPX_D * (SPX_WOTS_BYTES + COUNTER_SIZE) + \
+#define SPX_BYTES (SPX_N + COUNTER_SIZE + SPX_TFORS_SIG_MAX + SPX_D * (SPX_GWOTS_BYTES + COUNTER_SIZE) + \
                    SPX_FULL_HEIGHT * SPX_N)
 ```
 
 修改后：
 
 ```c
-#define SPX_BYTES (SPX_N + COUNTER_SIZE + 2 + SPX_TFORS_SIG_MAX + SPX_D * (SPX_WOTS_BYTES + COUNTER_SIZE) + \
+#define SPX_BYTES (SPX_N + COUNTER_SIZE + 2 + SPX_TFORS_SIG_MAX + SPX_D * (SPX_GWOTS_BYTES + COUNTER_SIZE) + \
                    SPX_FULL_HEIGHT * SPX_N)
 ```
 

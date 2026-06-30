@@ -5,6 +5,8 @@
 #include "context.h"
 #include "address.h"
 #include "thash.h"
+#include "thashx4.h"
+#include "hashx4.h"
 #include "utils.h"
 #include "tfors.h"
 
@@ -172,6 +174,105 @@ void octopus_compute_auth_paths(unsigned char root[SPX_N],
     }
     sig += auth.count * SPX_N;
 
+}
+
+void octopus_compute_auth_pathsx4(unsigned char root[SPX_N],
+                                  unsigned char *sig,
+                                  const uint32_t *indices,
+                                  const spx_ctx *ctx,
+                                  uint32_t tree_addr[8])
+{
+    uint32_t tree_height = SPX_TFORS_HEIGHT;
+    uint32_t max_idx = (1 << (tree_height - 2)) - 1;
+
+    octopus_auth auth;
+    octopus_compute(&auth, indices);
+
+    SPX_VLA(unsigned char, stackx4, tree_height * 4 * SPX_N);
+
+    uint32_t tree_addrx4[4*8] = {0};
+    for (int i = 0; i < 4; i++) {
+        copy_keypair_addr(tree_addrx4 + i*8, tree_addr);
+    }
+
+    uint32_t left_adj = 0, prev_left_adj = 0;
+
+    for (uint32_t idx = 0;; idx++) {
+        unsigned char current[4 * SPX_N];
+        unsigned char skx4[4 * SPX_N];
+
+        for (int i = 0; i < 4; i++) {
+            uint32_t leaf_idx = 4 * idx + i;
+            set_tree_height(tree_addrx4 + i*8, 0);
+            set_tree_index(tree_addrx4 + i*8, leaf_idx);
+            set_type(tree_addrx4 + i*8, SPX_ADDR_TYPE_TFORSPRF);
+        }
+
+        prf_addrx4(skx4 + 0*SPX_N, skx4 + 1*SPX_N,
+                   skx4 + 2*SPX_N, skx4 + 3*SPX_N,
+                   ctx, tree_addrx4);
+
+        for (int i = 0; i < 4; i++) {
+            set_type(tree_addrx4 + i*8, SPX_ADDR_TYPE_TFORSTREE);
+        }
+
+        tfors_sk_to_leafx4(current + 0*SPX_N, current + 1*SPX_N,
+                           current + 2*SPX_N, current + 3*SPX_N,
+                           skx4 + 0*SPX_N, skx4 + 1*SPX_N,
+                           skx4 + 2*SPX_N, skx4 + 3*SPX_N,
+                           ctx, tree_addrx4);
+
+        uint32_t internal_idx = idx;
+        uint32_t h;
+        for (h = 0;; h++, internal_idx >>= 1) {
+            if (h >= tree_height - 2) {
+                if (h == tree_height) {
+                    memcpy(root, &current[3 * SPX_N], SPX_N);
+                    return;
+                }
+                prev_left_adj = left_adj;
+                left_adj = 4 - (1 << (tree_height - h - 1));
+            }
+
+            for (uint32_t i = 0; i < auth.count; i++) {
+                uint32_t auth_node_idx = auth.entries[i].index;
+                uint32_t auth_level = auth.entries[i].level;
+
+                if (auth_level == h) {
+                    uint32_t node_start = internal_idx << 2;
+                    uint32_t node_end = node_start + 3;
+                    if (auth_node_idx >= node_start && auth_node_idx <= node_end) {
+                        uint32_t pos = (auth_node_idx - node_start) + prev_left_adj;
+                        memcpy(sig + i * SPX_N, &current[pos * SPX_N], SPX_N);
+                    }
+                }
+            }
+
+            if ((internal_idx & 1) == 0 && idx < max_idx) {
+                break;
+            }
+
+            int j;
+            for (j = 0; j < 4; j++) {
+                set_tree_height(tree_addrx4 + j*8, h + 1);
+                set_tree_index(tree_addrx4 + j*8,
+                               (4/2) * (internal_idx & ~1) + j - left_adj);
+            }
+
+            unsigned char *left = &stackx4[h * 4 * SPX_N];
+            thashx4(&current[0 * SPX_N],
+                    &current[1 * SPX_N],
+                    &current[2 * SPX_N],
+                    &current[3 * SPX_N],
+                    &left[0 * SPX_N],
+                    &left[2 * SPX_N],
+                    &current[0 * SPX_N],
+                    &current[2 * SPX_N],
+                    2, ctx, tree_addrx4);
+        }
+
+        memcpy(&stackx4[h * 4 * SPX_N], current, 4 * SPX_N);
+    }
 }
 
 void octopus_recompute_root(unsigned char root[SPX_N],

@@ -39,6 +39,12 @@ void octopus_compute_auth_paths(unsigned char root[SPX_N],
                                 const spx_ctx *ctx,
                                 uint32_t tree_addr[8]);
 
+void octopus_compute_auth_pathsx4(unsigned char root[SPX_N],
+                                  unsigned char *sig,
+                                  const uint32_t *indices,
+                                  const spx_ctx *ctx,
+                                  uint32_t tree_addr[8]);
+
 // recompute root from auth paths
 void octopus_recompute_root(unsigned char root[SPX_N],
                            const unsigned char *sig,

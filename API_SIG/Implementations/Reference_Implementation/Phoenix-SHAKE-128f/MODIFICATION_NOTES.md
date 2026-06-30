@@ -201,7 +201,7 @@ void thash(unsigned char *out, const unsigned char *in, unsigned int inblocks,
 
 修改原因：
 
-- `thash()` 在 WOTS、TFORS、Merkle tree 中调用次数非常多。
+- `thash()` 在 GWOTS、TFORS、Merkle tree 中调用次数非常多。
 - 原始实现每次都从 `pub_seed` 开始构造完整输入并 one-shot `shake256()`。
 - 修改后复用 `state_seeded_shake`，避免重复吸收 `pub_seed`。
 - 输入语义仍等价于
@@ -232,14 +232,14 @@ ref/params/params-phoenix-shake-512s.h
 修改前：
 
 ```c
-#define SPX_BYTES (SPX_N + COUNTER_SIZE + SPX_TFORS_SIG_MAX + SPX_D * (SPX_WOTS_BYTES + COUNTER_SIZE) + \
+#define SPX_BYTES (SPX_N + COUNTER_SIZE + SPX_TFORS_SIG_MAX + SPX_D * (SPX_GWOTS_BYTES + COUNTER_SIZE) + \
                    SPX_FULL_HEIGHT * SPX_N)
 ```
 
 修改后：
 
 ```c
-#define SPX_BYTES (SPX_N + COUNTER_SIZE + 2 + SPX_TFORS_SIG_MAX + SPX_D * (SPX_WOTS_BYTES + COUNTER_SIZE) + \
+#define SPX_BYTES (SPX_N + COUNTER_SIZE + 2 + SPX_TFORS_SIG_MAX + SPX_D * (SPX_GWOTS_BYTES + COUNTER_SIZE) + \
                    SPX_FULL_HEIGHT * SPX_N)
 ```
 
@@ -312,7 +312,7 @@ static unsigned char *alloc_message_buffer(const unsigned char *m, size_t mlen)
 修改前：
 
 ```c
-*siglen = SPX_N + COUNTER_SIZE + 2 + tfors_siglen + SPX_D * (SPX_WOTS_BYTES + SPX_TREE_HEIGHT * SPX_N + COUNTER_SIZE);
+*siglen = SPX_N + COUNTER_SIZE + 2 + tfors_siglen + SPX_D * (SPX_GWOTS_BYTES + SPX_TREE_HEIGHT * SPX_N + COUNTER_SIZE);
 ```
 
 修改后：
@@ -320,8 +320,8 @@ static unsigned char *alloc_message_buffer(const unsigned char *m, size_t mlen)
 ```c
 static int signature_length_from_tfors(size_t tfors_siglen, size_t *siglen)
 {
-    const size_t wots_layer_len = SPX_WOTS_BYTES + SPX_TREE_HEIGHT * SPX_N + COUNTER_SIZE;
-    const size_t fixed_siglen = SPX_N + COUNTER_SIZE + 2 + (size_t)SPX_D * wots_layer_len;
+    const size_t gwots_layer_len = SPX_GWOTS_BYTES + SPX_TREE_HEIGHT * SPX_N + COUNTER_SIZE;
+    const size_t fixed_siglen = SPX_N + COUNTER_SIZE + 2 + (size_t)SPX_D * gwots_layer_len;
 
     if (tfors_siglen > SIZE_MAX - fixed_siglen) {
         return -1;

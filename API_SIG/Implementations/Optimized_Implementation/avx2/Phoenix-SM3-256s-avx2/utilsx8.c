@@ -117,14 +117,14 @@ void gen_leafx8(unsigned char *dest,
                 void *v_info)
 {
     struct leaf_info_x8 *info = v_info;
-    unsigned char pk0[SPX_WOTS_BYTES];
-    unsigned char pk1[SPX_WOTS_BYTES];
-    unsigned char pk2[SPX_WOTS_BYTES];
-    unsigned char pk3[SPX_WOTS_BYTES];
-    unsigned char pk4[SPX_WOTS_BYTES];
-    unsigned char pk5[SPX_WOTS_BYTES];
-    unsigned char pk6[SPX_WOTS_BYTES];
-    unsigned char pk7[SPX_WOTS_BYTES];
+    unsigned char pk0[SPX_GWOTS_BYTES];
+    unsigned char pk1[SPX_GWOTS_BYTES];
+    unsigned char pk2[SPX_GWOTS_BYTES];
+    unsigned char pk3[SPX_GWOTS_BYTES];
+    unsigned char pk4[SPX_GWOTS_BYTES];
+    unsigned char pk5[SPX_GWOTS_BYTES];
+    unsigned char pk6[SPX_GWOTS_BYTES];
+    unsigned char pk7[SPX_GWOTS_BYTES];
     unsigned char chain0[SPX_N];
     unsigned char chain1[SPX_N];
     unsigned char chain2[SPX_N];
@@ -133,19 +133,19 @@ void gen_leafx8(unsigned char *dest,
     unsigned char chain5[SPX_N];
     unsigned char chain6[SPX_N];
     unsigned char chain7[SPX_N];
-    uint32_t wots_k_mask[8];
+    uint32_t gwots_k_mask[8];
 
     for (uint32_t lane = 0; lane < 8; lane++) {
         uint32_t lane_leaf = leaf_idx + lane;
         uint32_t *leaf_addr = info->leaf_addr + lane * 8;
         uint32_t *pk_addr = info->pk_addr + lane * 8;
 
-        wots_k_mask[lane] = (lane_leaf == info->wots_sign_leaf) ? 0u : ~0u;
+        gwots_k_mask[lane] = (lane_leaf == info->gwots_sign_leaf) ? 0u : ~0u;
         set_keypair_addr(leaf_addr, lane_leaf);
         set_keypair_addr(pk_addr, lane_leaf);
     }
 
-    for (uint32_t i = 0; i < SPX_WOTS_LEN; i++) {
+    for (uint32_t i = 0; i < SPX_GWOTS_LEN; i++) {
         unsigned int starts[8] = {0, 0, 0, 0, 0, 0, 0, 0};
         unsigned int full_steps[8];
         unsigned int sig_steps[8] = {0, 0, 0, 0, 0, 0, 0, 0};
@@ -160,12 +160,12 @@ void gen_leafx8(unsigned char *dest,
         uint32_t w;
         int have_sig_lane = 0;
 
-        if (i < SPX_WOTS_W1_LEN) {
-            w = SPX_WOTS_W1;
-        } else if (i < SPX_WOTS_LEN1) {
-            w = SPX_WOTS_W2;
+        if (i < SPX_GWOTS_W1_LEN) {
+            w = SPX_GWOTS_W1;
+        } else if (i < SPX_GWOTS_LEN1) {
+            w = SPX_GWOTS_W2;
         } else {
-            w = SPX_WOTS_CHECKSUM_W;
+            w = SPX_GWOTS_CHECKSUM_W;
         }
 
         for (uint32_t lane = 0; lane < 8; lane++) {
@@ -173,10 +173,10 @@ void gen_leafx8(unsigned char *dest,
             full_steps[lane] = w - 1;
             set_chain_addr(leaf_addr, i);
             set_hash_addr(leaf_addr, 0);
-            set_type(leaf_addr, SPX_ADDR_TYPE_WOTSPRF);
+            set_type(leaf_addr, SPX_ADDR_TYPE_GWOTSPRF);
 
-            if (wots_k_mask[lane] == 0u && info->wots_sig != 0) {
-                sig_steps[lane] = info->wots_steps[i];
+            if (gwots_k_mask[lane] == 0u && info->gwots_sig != 0) {
+                sig_steps[lane] = info->gwots_steps[i];
                 have_sig_lane = 1;
             }
         }
@@ -186,7 +186,7 @@ void gen_leafx8(unsigned char *dest,
                    ctx, info->leaf_addr);
 
         for (uint32_t lane = 0; lane < 8; lane++) {
-            set_type(info->leaf_addr + lane * 8, SPX_ADDR_TYPE_WOTS);
+            set_type(info->leaf_addr + lane * 8, SPX_ADDR_TYPE_GWOTS);
         }
 
         if (have_sig_lane) {
@@ -197,7 +197,7 @@ void gen_leafx8(unsigned char *dest,
                     starts, sig_steps, ctx, info->leaf_addr, w);
 
             for (uint32_t lane = 0; lane < 8; lane++) {
-                if (wots_k_mask[lane] == 0u && info->wots_sig != 0) {
+                if (gwots_k_mask[lane] == 0u && info->gwots_sig != 0) {
                     const unsigned char *sig_src;
 
                     switch (lane) {
@@ -211,7 +211,7 @@ void gen_leafx8(unsigned char *dest,
                         default: sig_src = sig7; break;
                     }
 
-                    memcpy(info->wots_sig + i * SPX_N, sig_src, SPX_N);
+                    memcpy(info->gwots_sig + i * SPX_N, sig_src, SPX_N);
                 }
             }
         }
@@ -242,7 +242,7 @@ void gen_leafx8(unsigned char *dest,
             dest + 7 * SPX_N,
             pk0, pk1, pk2, pk3,
             pk4, pk5, pk6, pk7,
-            SPX_WOTS_LEN, ctx, info->pk_addr);
+            SPX_GWOTS_LEN, ctx, info->pk_addr);
 }
 
 void treehashx8(unsigned char *root,

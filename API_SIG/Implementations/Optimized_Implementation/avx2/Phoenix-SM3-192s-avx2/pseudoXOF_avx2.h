@@ -12,7 +12,7 @@
  * 
  * Performance:
  * - Uses sm3x8_avx2 internally (4 active lanes + 4 dummy lanes)
- * - True AVX2 parallelism for WOTS 4-way chain computation
+ * - True AVX2 parallelism for GWOTS 4-way chain computation
  */
 void pseudoXOFx4_avx2_aligned(
     unsigned char *out0, unsigned char *out1,

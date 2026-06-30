@@ -21,8 +21,8 @@ CORE_SOURCES = \
 	utilsx1.c \
 	utilsx4.c \
 	utilsx8.c \
-	wots.c \
-	wotsx1.c
+	gwots.c \
+	gwotsx1.c
 
 AVX2_SOURCES = \
 	sm3_avx2.c \

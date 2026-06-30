@@ -138,7 +138,7 @@ int main(void)
 
     printf("Parameters: n = %d, h = %d, d = %d, b = %d, k = %d, w = %d\n",
            SPX_N, SPX_FULL_HEIGHT, SPX_D, SPX_TFORS_A, SPX_TFORS_K,
-           SPX_WOTS_W1);
+           SPX_GWOTS_W1);
     printf("  - Tree height: %d\n", SPX_TFORS_HEIGHT);
     printf("  - Total leaves: %d\n", (1 << SPX_TFORS_HEIGHT));
     printf("  - Max signature bytes: %d\n", (int)SPX_TFORS_BYTES);
