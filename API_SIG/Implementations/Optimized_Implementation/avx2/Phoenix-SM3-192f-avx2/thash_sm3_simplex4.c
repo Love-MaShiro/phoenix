@@ -6,6 +6,7 @@
 #include "params.h"
 #include "utils.h"
 #include "hash_sm3.h"
+#include "pseudoXOF_avx2.h"
 
 void thashx4(unsigned char *out0,
               unsigned char *out1,
@@ -34,9 +35,9 @@ void thashx4(unsigned char *out0,
     memcpy(buf2 + SPX_SM3_ADDR_BYTES, in2, inblocks * SPX_N);
     memcpy(buf3 + SPX_SM3_ADDR_BYTES, in3, inblocks * SPX_N);
 
-    /* Use sm3_xof for correct XOF output length (SPX_N = 16 bytes) */
-    sm3_xof(out0, SPX_N, buf0, SPX_SM3_ADDR_BYTES + inblocks * SPX_N);
-    sm3_xof(out1, SPX_N, buf1, SPX_SM3_ADDR_BYTES + inblocks * SPX_N);
-    sm3_xof(out2, SPX_N, buf2, SPX_SM3_ADDR_BYTES + inblocks * SPX_N);
-    sm3_xof(out3, SPX_N, buf3, SPX_SM3_ADDR_BYTES + inblocks * SPX_N);
+    pseudoXOFx4_avx2_aligned(
+        out0, out1, out2, out3,
+        SPX_N * 8,
+        buf0, buf1, buf2, buf3,
+        (SPX_SM3_ADDR_BYTES + inblocks * SPX_N) * 8);
 }

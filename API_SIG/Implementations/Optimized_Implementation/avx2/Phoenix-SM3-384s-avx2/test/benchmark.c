@@ -5,12 +5,8 @@
 #include <time.h>
 #include <string.h>
 #include <stdint.h>
-#ifdef _WIN32
-#include <windows.h>
-#endif
 
 #include "../hash.h"
-#include "../hash_sm3.h"
 #include "../thash.h"
 #include "../api.h"
 #include "../tfors.h"
@@ -24,23 +20,6 @@
 
 static void wots_gen_pkx1(unsigned char *pk, const spx_ctx* ctx,
                 uint32_t addr[8]);
-static void bench_sm3_xof4_scalar(unsigned char *out0, unsigned char *out1,
-                                  unsigned char *out2, unsigned char *out3,
-                                  const unsigned char *in0,
-                                  const unsigned char *in1,
-                                  const unsigned char *in2,
-                                  const unsigned char *in3,
-                                  unsigned long outlen,
-                                  unsigned long inlen);
-static void bench_sm3_xofx4(unsigned char *out0, unsigned char *out1,
-                            unsigned char *out2, unsigned char *out3,
-                            const unsigned char *in0,
-                            const unsigned char *in1,
-                            const unsigned char *in2,
-                            const unsigned char *in3,
-                            unsigned long outlen,
-                            unsigned long inlen);
-static double now_us(void);
 
 static int cmp_llu(const void *a, const void*b)
 {
@@ -109,14 +88,15 @@ static void display_result(double result, unsigned long long *l, size_t llen, un
 
 #define MEASURE_GENERIC(TEXT, MUL, FNCALL, CORR)\
     printf(TEXT);\
-    start_us = now_us();\
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);\
     for(i = 0; i < NTESTS; i++) {\
         t[i] = cpucycles() / CORR;\
         FNCALL;\
     }\
     t[NTESTS] = cpucycles();\
-    stop_us = now_us();\
-    result = (stop_us - start_us) / (double)CORR;\
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &stop);\
+    result = ((stop.tv_sec - start.tv_sec) * 1e6 + \
+        (stop.tv_nsec - start.tv_nsec) / 1e3) / (double)CORR;\
     display_result(result, t, NTESTS, MUL);
 #define MEASURT(TEXT, MUL, FNCALL)\
     MEASURE_GENERIC(\
@@ -148,14 +128,6 @@ int main(void)
     unsigned char tfors_sig[SPX_TFORS_BYTES];
     uint32_t addr[8];
     unsigned char block[SPX_N];
-    unsigned char xof_in0[SPX_SM3_ADDR_BYTES + 2 * SPX_N];
-    unsigned char xof_in1[SPX_SM3_ADDR_BYTES + 2 * SPX_N];
-    unsigned char xof_in2[SPX_SM3_ADDR_BYTES + 2 * SPX_N];
-    unsigned char xof_in3[SPX_SM3_ADDR_BYTES + 2 * SPX_N];
-    unsigned char xof_out0[2 * SPX_N];
-    unsigned char xof_out1[2 * SPX_N];
-    unsigned char xof_out2[2 * SPX_N];
-    unsigned char xof_out3[2 * SPX_N];
 
     unsigned char wots_pk[SPX_WOTS_PK_BYTES];
 
@@ -164,17 +136,13 @@ int main(void)
     unsigned long long slen;
     unsigned long long tfslen;
     unsigned long long t[NTESTS+1];
-    double start_us, stop_us;
+    struct timespec start, stop;
     double result;
     int i;
 
     randombytes(m, SPX_MLEN);
     randombytes((unsigned char *)addr, SPX_ADDR_BYTES);
     randombytes(tfors_m, SPX_TFORS_MSG_BYTES);
-    randombytes(xof_in0, sizeof(xof_in0));
-    randombytes(xof_in1, sizeof(xof_in1));
-    randombytes(xof_in2, sizeof(xof_in2));
-    randombytes(xof_in3, sizeof(xof_in3));
 
     randombytes(ctx.pub_seed, SPX_N);
     randombytes(ctx.sk_seed, SPX_N);
@@ -193,14 +161,6 @@ int main(void)
     printf("Running %d iterations.\n", NTESTS);
 
     MEASURT("thash                ", 1, thash(block, block, 1, &ctx, addr));
-    MEASURT("sm3_xof scalar x4    ", 1,
-            bench_sm3_xof4_scalar(xof_out0, xof_out1, xof_out2, xof_out3,
-                                  xof_in0, xof_in1, xof_in2, xof_in3,
-                                  SPX_N, sizeof(xof_in0)));
-    MEASURT("sm3_xofx4            ", 1,
-            bench_sm3_xofx4(xof_out0, xof_out1, xof_out2, xof_out3,
-                            xof_in0, xof_in1, xof_in2, xof_in3,
-                            SPX_N, sizeof(xof_in0)));
     MEASURE("Generating keypair.. ", 1, crypto_sign_keypair(pk, sk));
     MEASURE("  - WOTS pk gen..    ", (1 << SPX_TREE_HEIGHT), wots_gen_pkx1(wots_pk, &ctx, addr));
     MEASURE("Signing..            ", 1, crypto_sign(sm, &smlen, &slen, &tfslen, m, SPX_MLEN, sk));
@@ -224,47 +184,4 @@ static void wots_gen_pkx1(unsigned char *pk, const spx_ctx *ctx,
     unsigned steps[ SPX_WOTS_LEN ] = { 0 };
     INITIALIZE_LEAF_INFO_X1(leaf, addr, steps);
     wots_gen_leafx1(pk, ctx, 0, &leaf);
-}
-
-static void bench_sm3_xof4_scalar(unsigned char *out0, unsigned char *out1,
-                                  unsigned char *out2, unsigned char *out3,
-                                  const unsigned char *in0,
-                                  const unsigned char *in1,
-                                  const unsigned char *in2,
-                                  const unsigned char *in3,
-                                  unsigned long outlen,
-                                  unsigned long inlen)
-{
-    sm3_xof(out0, outlen, in0, inlen);
-    sm3_xof(out1, outlen, in1, inlen);
-    sm3_xof(out2, outlen, in2, inlen);
-    sm3_xof(out3, outlen, in3, inlen);
-}
-
-static void bench_sm3_xofx4(unsigned char *out0, unsigned char *out1,
-                            unsigned char *out2, unsigned char *out3,
-                            const unsigned char *in0,
-                            const unsigned char *in1,
-                            const unsigned char *in2,
-                            const unsigned char *in3,
-                            unsigned long outlen,
-                            unsigned long inlen)
-{
-    sm3_xofx4(out0, out1, out2, out3, outlen,
-              in0, in1, in2, in3, inlen);
-}
-
-static double now_us(void)
-{
-#ifdef _WIN32
-    LARGE_INTEGER freq;
-    LARGE_INTEGER counter;
-    QueryPerformanceFrequency(&freq);
-    QueryPerformanceCounter(&counter);
-    return (double)counter.QuadPart * 1000000.0 / (double)freq.QuadPart;
-#else
-    struct timespec ts;
-    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts);
-    return (double)ts.tv_sec * 1000000.0 + (double)ts.tv_nsec / 1000.0;
-#endif
 }

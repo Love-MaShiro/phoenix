@@ -26,7 +26,6 @@ void sm3_xofx4(unsigned char *out0, unsigned char *out1,
                const unsigned char *in0, const unsigned char *in1,
                const unsigned char *in2, const unsigned char *in3,
                unsigned long inlen);
-
 void seed_state_sm3(spx_ctx *ctx);
 
 #endif

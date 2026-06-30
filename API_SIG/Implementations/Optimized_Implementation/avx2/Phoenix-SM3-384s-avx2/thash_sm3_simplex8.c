@@ -6,7 +6,7 @@
 #include "params.h"
 #include "utils.h"
 #include "hash_sm3.h"
-#include "sm3_internal.h"
+#include "pseudoXOF_avx2.h"
 
 void thashx8(unsigned char *out0,
              unsigned char *out1,
@@ -55,9 +55,12 @@ void thashx8(unsigned char *out0,
     memcpy(buf6 + SPX_SM3_ADDR_BYTES, in6, inblocks * SPX_N);
     memcpy(buf7 + SPX_SM3_ADDR_BYTES, in7, inblocks * SPX_N);
 
-    sm3x8_avx2(out0, out1, out2, out3,
-               out4, out5, out6, out7,
-               buf0, buf1, buf2, buf3,
-               buf4, buf5, buf6, buf7,
-               SPX_SM3_ADDR_BYTES + inblocks * SPX_N);
+    /* Use 8-way AVX2 parallel pseudoXOF for correct XOF behavior */
+    pseudoXOFx8_avx2_aligned(
+        out0, out1, out2, out3,
+        out4, out5, out6, out7,
+        SPX_N * 8,
+        buf0, buf1, buf2, buf3,
+        buf4, buf5, buf6, buf7,
+        (SPX_SM3_ADDR_BYTES + inblocks * SPX_N) * 8);
 }

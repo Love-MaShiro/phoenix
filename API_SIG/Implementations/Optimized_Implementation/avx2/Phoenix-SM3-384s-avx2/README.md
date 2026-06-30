@@ -1,7 +1,7 @@
-# Phoenix-SM3-384s-avx2
+# Phoenix-SM3-128f-avx2
 
 This directory contains the AVX2-optimized implementation for the
-`Phoenix-SM3-384s` signature algorithm instance.
+`Phoenix-SM3-128f` signature algorithm instance.
 
 ## Build and generate KAT vectors
 
@@ -12,7 +12,7 @@ make kat
 The generated vector file is written to:
 
 ```text
-output/KAT_SIG_Phoenix-SM3-384s-avx2.txt
+output/KAT_SIG_Phoenix-SM3-128f-avx2.txt
 ```
 
 Expected SHA-256:
@@ -23,31 +23,6 @@ Expected SHA-256:
 
 See `MODIFICATION_NOTES.md` for the changes from the original GitHub reference
 implementation and reproduction steps.
-
-## SM3 XOF x4 AVX2
-
-This variant includes an internal `sm3_xofx4` helper for four byte-aligned
-Phoenix inputs with equal input and output lengths. The helper builds
-`msg || ct` counter blocks for each lane, uses the existing AVX2 SM3 x8
-compressor for the low four lanes, and falls back to four scalar `sm3_xof`
-calls when the AVX2 path is not compiled.
-
-Direct scalar-equivalence coverage is available with:
-
-```sh
-mingw32-make test-sm3-xofx4
-./test-sm3-xofx4
-```
-
-The benchmark target now includes scalar x4 versus `sm3_xofx4` measurement
-points and can be compiled with:
-
-```sh
-mingw32-make benchmark
-```
-
-The benchmark executable is intentionally not run by default because the full
-Phoenix end-to-end benchmark can take a long time on Windows.
 
 ## File Structure
 
@@ -81,7 +56,6 @@ algorithm. The file structure is as follows:
 | `sm3_x8.c` | 8-way parallel SM3 wrapper |
 | `sm3_x4.c` | 4-way parallel SM3 wrapper (NEON compatible) |
 | `sm3_neon.c` | SM3 NEON 4-way parallel implementation |
-| `hash_sm3x4.c` | 4-way SM3 pseudoXOF helper and `prf_addrx4` wrapper |
 | `hash_sm3x8.c` | 8-way parallel prf_addr implementation |
 | `thash_sm3_simplex8.c` | 8-way parallel tree hash implementation |
 
@@ -95,7 +69,6 @@ algorithm. The file structure is as follows:
 | `context.h` | Context structure definition |
 | `drng.h` | DRNG interface |
 | `hash.h` | Generic hash function interface |
-| `hash_sm3x4.h` | 4-way SM3 pseudoXOF hash interface |
 | `hashx8.h` | 8-way parallel hash interface |
 | `merkle.h` | Merkle tree interface |
 | `octopus.h` | Octopus interface |

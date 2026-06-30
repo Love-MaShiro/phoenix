@@ -3,7 +3,7 @@
 
 #include "utils.h"
 #include "utilsx1.h"
-#include "utilsx8.h"
+#include "utilsx4.h"
 #include "wots.h"
 #include "wotsx1.h"
 #include "thash.h"
@@ -24,10 +24,10 @@ void merkle_sign(uint8_t *sig, unsigned char *root,
 {
 #define MAX_HASH_TRIALS_WOTS (1 << (20))
     unsigned char *auth_path = sig + SPX_WOTS_BYTES;
-    struct leaf_info_x8 info = {0};
+    struct leaf_info_x4 info = {0};
     unsigned steps[SPX_WOTS_LEN];
     unsigned char bitmask[SPX_N];
-    uint32_t tree_addrx8[8 * 8] = {0};
+    uint32_t tree_addrx4[4 * 8] = {0};
     int j;
 
     /*Initial paramaters for custom thash & counter search*/
@@ -38,11 +38,11 @@ void merkle_sign(uint8_t *sig, unsigned char *root,
 
     /*Initialize parameters for actual sign*/
     set_type(&tree_addr[0], SPX_ADDR_TYPE_HASHTREE);
-    for (j = 0; j < 8; j++) {
-        set_type(&tree_addrx8[8 * j], SPX_ADDR_TYPE_HASHTREE);
+    for (j = 0; j < 4; j++) {
+        set_type(&tree_addrx4[8 * j], SPX_ADDR_TYPE_HASHTREE);
         set_type(&info.leaf_addr[8 * j], SPX_ADDR_TYPE_WOTS);
         set_type(&info.pk_addr[8 * j], SPX_ADDR_TYPE_WOTSPK);
-        copy_subtree_addr(&tree_addrx8[8 * j], tree_addr);
+        copy_subtree_addr(&tree_addrx4[8 * j], tree_addr);
         copy_subtree_addr(&info.leaf_addr[8 * j], wots_addr);
         copy_subtree_addr(&info.pk_addr[8 * j], wots_addr);
     }
@@ -96,11 +96,11 @@ void merkle_sign(uint8_t *sig, unsigned char *root,
 
     info.wots_sign_leaf = idx_leaf;
 
-    treehashx8(root, auth_path, ctx,
+    treehashx4(root, auth_path, ctx,
                idx_leaf, 0,
                SPX_TREE_HEIGHT,
-               gen_leafx8,
-               tree_addrx8, &info);
+               gen_leafx4,
+               tree_addrx4, &info);
 }
 
 /* Compute root node of the top-most subtree. */

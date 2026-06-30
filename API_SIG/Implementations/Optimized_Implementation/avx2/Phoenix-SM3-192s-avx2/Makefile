@@ -12,6 +12,7 @@ CORE_SOURCES = \
 	hash_sm3.c sm3_drng.c hash_sm3x4.c hash_sm3x8.c \
 	merkle.c \
 	octopus.c \
+	pseudoXOF_avx2.c \
 	randombytes.c \
 	sign.c \
 	tfors.c \
