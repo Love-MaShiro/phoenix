@@ -113,11 +113,26 @@ void prf_addrx4(unsigned char *out0,
                 const spx_ctx *ctx,
                 const uint32_t addrx4[4 * 8])
 {
-    SPX_VLA(uint8_t, buf0, SPX_SM3_ADDR_BYTES + SPX_N);
-    SPX_VLA(uint8_t, buf1, SPX_SM3_ADDR_BYTES + SPX_N);
-    SPX_VLA(uint8_t, buf2, SPX_SM3_ADDR_BYTES + SPX_N);
-    SPX_VLA(uint8_t, buf3, SPX_SM3_ADDR_BYTES + SPX_N);
+    /* Use sm3_inc_finalize (standard incremental SM3) to match
+       the scalar prf_addr in hash_sm3.c. Each lane independently
+       hashes ADDR‖SK.seed using the precomputed pub_seed state. */
+    uint8_t sm3_state0[40], sm3_state1[40], sm3_state2[40], sm3_state3[40];
+    unsigned char buf0[SPX_SM3_ADDR_BYTES + SPX_N];
+    unsigned char buf1[SPX_SM3_ADDR_BYTES + SPX_N];
+    unsigned char buf2[SPX_SM3_ADDR_BYTES + SPX_N];
+    unsigned char buf3[SPX_SM3_ADDR_BYTES + SPX_N];
+    unsigned char outbuf0[SPX_SM3_OUTPUT_BYTES];
+    unsigned char outbuf1[SPX_SM3_OUTPUT_BYTES];
+    unsigned char outbuf2[SPX_SM3_OUTPUT_BYTES];
+    unsigned char outbuf3[SPX_SM3_OUTPUT_BYTES];
 
+    /* Retrieve precomputed state containing pub_seed */
+    memcpy(sm3_state0, ctx->state_seeded_sm3, 40);
+    memcpy(sm3_state1, ctx->state_seeded_sm3, 40);
+    memcpy(sm3_state2, ctx->state_seeded_sm3, 40);
+    memcpy(sm3_state3, ctx->state_seeded_sm3, 40);
+
+    /* Remainder: ADDR^c ‖ SK.seed */
     memcpy(buf0, addrx4 + 0 * 8, SPX_SM3_ADDR_BYTES);
     memcpy(buf1, addrx4 + 1 * 8, SPX_SM3_ADDR_BYTES);
     memcpy(buf2, addrx4 + 2 * 8, SPX_SM3_ADDR_BYTES);
@@ -128,7 +143,13 @@ void prf_addrx4(unsigned char *out0,
     memcpy(buf2 + SPX_SM3_ADDR_BYTES, ctx->sk_seed, SPX_N);
     memcpy(buf3 + SPX_SM3_ADDR_BYTES, ctx->sk_seed, SPX_N);
 
-    sm3_xofx4(out0, out1, out2, out3, SPX_N,
-              buf0, buf1, buf2, buf3,
-              SPX_SM3_ADDR_BYTES + SPX_N);
+    sm3_inc_finalize(outbuf0, sm3_state0, buf0, SPX_SM3_ADDR_BYTES + SPX_N);
+    sm3_inc_finalize(outbuf1, sm3_state1, buf1, SPX_SM3_ADDR_BYTES + SPX_N);
+    sm3_inc_finalize(outbuf2, sm3_state2, buf2, SPX_SM3_ADDR_BYTES + SPX_N);
+    sm3_inc_finalize(outbuf3, sm3_state3, buf3, SPX_SM3_ADDR_BYTES + SPX_N);
+
+    memcpy(out0, outbuf0, SPX_N);
+    memcpy(out1, outbuf1, SPX_N);
+    memcpy(out2, outbuf2, SPX_N);
+    memcpy(out3, outbuf3, SPX_N);
 }

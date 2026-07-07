@@ -13,6 +13,7 @@
 void thash(unsigned char *out, const unsigned char *in, unsigned int inblocks,
            const spx_ctx *ctx, uint32_t addr[8])
 {
+    unsigned char outbuf[SPX_SM3_OUTPUT_BYTES];
     uint8_t sm3_state[40];
     SPX_VLA(uint8_t, buf, SPX_SM3_ADDR_BYTES + inblocks*SPX_N);
 
@@ -22,8 +23,8 @@ void thash(unsigned char *out, const unsigned char *in, unsigned int inblocks,
     memcpy(buf, addr, SPX_SM3_ADDR_BYTES);
     memcpy(buf + SPX_SM3_ADDR_BYTES, in, inblocks * SPX_N);
 
-    /* Use sm3_xof for arbitrary length output */
-    sm3_xof(out, SPX_N, buf, SPX_SM3_ADDR_BYTES + inblocks*SPX_N);
+    sm3_inc_finalize(outbuf, sm3_state, buf, SPX_SM3_ADDR_BYTES + inblocks*SPX_N);
+    memcpy(out, outbuf, SPX_N);
 }
 
 /**
@@ -38,6 +39,7 @@ void thash_init_bitmask(unsigned char *bitmask_out, unsigned int inblocks,
     memcpy(buf + SPX_N, addr, SPX_SM3_ADDR_BYTES);
 
     sm3_xof(bitmask_out, inblocks * SPX_N, buf, SPX_N + SPX_SM3_ADDR_BYTES);
+    /* Note: sm3_xof and mgf1_sm3 both call pseudoXOF — semantically identical */
 }
 
 /**
@@ -47,6 +49,8 @@ void thash_fin(unsigned char *out, const unsigned char *in, unsigned int inblock
                const spx_ctx *ctx, uint32_t addr[8], const unsigned char *bitmask)
 {
     unsigned char buf[SPX_SM3_ADDR_BYTES + inblocks * SPX_N];
+    unsigned char outbuf[SPX_SM3_OUTPUT_BYTES];
+    uint8_t sm3_state[40];
     unsigned int i;
 
     /* 1. Copy the address into the buffer */
@@ -66,6 +70,9 @@ void thash_fin(unsigned char *out, const unsigned char *in, unsigned int inblock
         }
     }
 
-    /* 3. Use sm3_xof for arbitrary length output */
-    sm3_xof(out, SPX_N, buf, SPX_SM3_ADDR_BYTES + inblocks * SPX_N);
+    /* 3. Finalize the hash using the pre-computed state */
+    memcpy(sm3_state, ctx->state_seeded_sm3, 40);
+    sm3_inc_finalize(outbuf, sm3_state, buf, SPX_SM3_ADDR_BYTES + inblocks * SPX_N);
+
+    memcpy(out, outbuf, SPX_N);
 }
