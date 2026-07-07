@@ -1,0 +1,57 @@
+Phoenix Benchmark — 2026年 06月 30日 星期二 16:04:28 CST
+CPU: Intel(R) Xeon(R) Gold 6226R CPU @ 2.90GHz
+
+
+=== Reference — f (fast) mode ===
+  Phoenix-SHAKE-128f (Ref) ... OK
+  Phoenix-SHAKE-192f (Ref) ... BUILD FAIL
+  Phoenix-SHAKE-256f (Ref) ... OK
+  Phoenix-SHAKE-384f (Ref) ... OK
+  Phoenix-SHAKE-512f (Ref) ... OK
+  Phoenix-SM3-128f (Ref) ... OK
+  Phoenix-SM3-192f (Ref) ... OK
+  Phoenix-SM3-256f (Ref) ... OK
+  Phoenix-SM3-384f (Ref) ... OK
+  Phoenix-SM3-512f (Ref) ... OK
+
+=== Reference — s (small) mode ===
+(Note: s-mode benchmark requires GWOTS support — may fail if benchmark.c uses GWOTS calls)
+  Phoenix-SHAKE-128s (Ref) ... OK
+  Phoenix-SHAKE-192s (Ref) ... OK
+  Phoenix-SHAKE-256s (Ref) ... OK
+  Phoenix-SHAKE-384s (Ref) ... OK
+  Phoenix-SHAKE-512s (Ref) ... OK
+  Phoenix-SM3-128s (Ref) ... OK
+  Phoenix-SM3-192s (Ref) ... OK
+  Phoenix-SM3-256s (Ref) ... OK
+  Phoenix-SM3-384s (Ref) ... OK
+  Phoenix-SM3-512s (Ref) ... OK
+
+=== Optimized AVX2 — f mode ===
+  Phoenix-SHAKE-128f (AVX2) ... BUILD FAIL
+  Phoenix-SHAKE-192f (AVX2) ... BUILD FAIL
+  Phoenix-SHAKE-256f (AVX2) ... TIMEOUT/CRASH
+  Phoenix-SHAKE-384f (AVX2) ... BUILD FAIL
+  Phoenix-SHAKE-512f (AVX2) ... TIMEOUT/CRASH
+  Phoenix-SM3-128f (AVX2) ... OK
+  Phoenix-SM3-192f (AVX2) ... OK
+  Phoenix-SM3-256f (AVX2) ... OK
+  Phoenix-SM3-384f (AVX2) ... OK
+  Phoenix-SM3-512f (AVX2) ... OK
+
+=== Optimized AVX2 — s mode ===
+  Phoenix-SHAKE-128s (AVX2) ... BUILD FAIL
+  Phoenix-SHAKE-192s (AVX2) ... BUILD FAIL
+  Phoenix-SHAKE-256s (AVX2) ... BUILD FAIL
+  Phoenix-SHAKE-384s (AVX2) ... BUILD FAIL
+  Phoenix-SHAKE-512s (AVX2) ... TIMEOUT/CRASH
+  Phoenix-SM3-128s (AVX2) ... OK
+  Phoenix-SM3-192s (AVX2) ... OK
+  Phoenix-SM3-256s (AVX2) ... OK
+  Phoenix-SM3-384s (AVX2) ... OK
+  Phoenix-SM3-512s (AVX2) ... OK
+
+=== Done ===
+CSV: /home/myx/phoenix/Phoenix/bench/results/phoenix_benchmark_20260630_160428.csv
+Log: /home/myx/phoenix/Phoenix/bench/results/run_20260630_160428.log
+30 /home/myx/phoenix/Phoenix/bench/results/phoenix_benchmark_20260630_160428.csv
